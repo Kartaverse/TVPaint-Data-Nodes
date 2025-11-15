@@ -53,7 +53,7 @@ Clip
 
 Project
 - TVPaintProjectFormat
-- TVPaintProjectFormat
+- TVPaintProjectVersion
 
 ## TVPaint Node Usage
 
