@@ -53,6 +53,7 @@ IO
 - TVPaintLoader
 
 Layer
+- TVPaintLayerBlendMode
 - TVPaintLayerCount
 - TVPaintLayerName
 
