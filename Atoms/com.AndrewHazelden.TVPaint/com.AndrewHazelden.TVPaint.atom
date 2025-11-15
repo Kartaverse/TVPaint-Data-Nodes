@@ -21,6 +21,7 @@ LGPL/GPL v3</p>
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraFPS.fuse",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraPixelAspectRatio.fuse",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraSize.fuse",
+		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipDPI.fuse",
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipMarkIn.fuse",
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipMarkOut.fuse",
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipName.fuse",
