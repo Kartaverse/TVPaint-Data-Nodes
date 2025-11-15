@@ -32,6 +32,7 @@ LGPL/GPL v3</p>
 		"Fuses/Kartaverse/TVPaint/Layer/TVPaintLayerBlendMode.fuse",
 		"Fuses/Kartaverse/TVPaint/Layer/TVPaintLayerCount.fuse",
 		"Fuses/Kartaverse/TVPaint/Layer/TVPaintLayerName.fuse",
+		"Fuses/Kartaverse/TVPaint/Layer/TVPaintLayerOpacity.fuse",
 		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectFormat.fuse",
 		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectVersion.fuse",
 		"Scripts/Comp/TVPaint/Open/Show Comps Folder.lua",

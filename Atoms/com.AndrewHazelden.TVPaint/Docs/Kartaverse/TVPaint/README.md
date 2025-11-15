@@ -56,6 +56,7 @@ Layer
 - TVPaintLayerBlendMode
 - TVPaintLayerCount
 - TVPaintLayerName
+- TVPaintLayerOpacity
 
 Project
 - TVPaintProjectFormat
