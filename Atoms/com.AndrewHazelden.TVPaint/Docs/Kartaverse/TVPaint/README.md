@@ -50,6 +50,10 @@ Clip
 - TVPaintClipMarkOut
 - TVPaintClipName
 
+Project
+- TVPaintProjectFormat
+- TVPaintProjectFormat
+
 ## TVPaint Node Usage
 
 The Fusion node graph allows for the use of "data nodes". This nodal operator driven approach allows the individual node based input and output connections to pass TVPaint encoded documents "down the flow" in a parametric fashion.

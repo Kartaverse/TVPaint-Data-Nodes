@@ -1,0 +1,91 @@
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "TVPaintProjectVersion"
+DATATYPE = "Text"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "TVPaint\\Project",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Returns the TVPaint project version as a string",
+    REGS_OpIconString = FUSE_NAME,
+    REGS_IconID = "Icons.Tools.Icons.TextPlus",
+})
+
+function Create()
+    -- [[ Creates the user interface. ]]
+    InScriptVal = self:AddInput("ScriptVal", "ScriptVal", {
+        LINKID_DataType = "ScriptVal",
+        LINK_Main = 1
+    })
+    OutText = self:AddOutput("Output" , "Output" , {
+        LINKID_DataType = "Text",
+        LINK_Main = 1
+    })
+end
+
+function NotifyChanged(inp, param, time)
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+end
+
+function get(t, key)
+    --[[
+        Returns the value of a key in a table.
+
+        :param t: Table to get key value for.
+        :type t: table
+
+        :param key: Key to get value of.
+        :type key: string
+
+        :rtype: ?
+    ]]
+    local value = nil
+    local found = false
+
+    for k, v in pairs(t) do
+        if k == key then
+            value = v
+            found = true
+            break
+        end
+    end
+
+    if not found then
+        error(string.format("no key '%s' found in ScriptVal table", key))
+    end
+
+    return value
+end
+
+function Process(req)
+    -- [[ Creates the output. ]]
+    local tbl = InScriptVal:GetValue(req):GetValue()
+
+    -- Read the TVPaint version info
+    local value_str = ""
+    if type(tbl) == "table" and tbl.version and tbl.version.major and tbl.version.minor then
+        value_str = tostring(tbl.version.major) .. "." .. tostring(tbl.version.minor)
+    end
+
+    local out = Text(value_str)
+    OutText:Set(req, out)
+end
+

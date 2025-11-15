@@ -27,6 +27,8 @@ LGPL/GPL v3</p>
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintImageCount.fuse",
 		"Fuses/Kartaverse/TVPaint/Create/TVPaintBackground.fuse",
 		"Fuses/Kartaverse/TVPaint/IO/TVPaintLoader.fuse",
+		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectFormat.fuse",
+		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectVersion.fuse",
 		"Scripts/Comp/TVPaint/Open/Show Comps Folder.lua",
 		"Scripts/Comp/TVPaint/Open/Show Fuses Folder.lua",
 	},
