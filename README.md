@@ -46,6 +46,7 @@ Camera
 
 Clip
 - TVPaintClipDPI
+- TVPaintClipFPS
 - TVPaintClipMarkIn
 - TVPaintClipMarkOut
 - TVPaintClipName

@@ -1,7 +1,7 @@
 -- ============================================================================
 -- constants
 -- ============================================================================
-FUSE_NAME = "TVPaintCameraFPS"
+FUSE_NAME = "TVPaintClipFPS"
 DATATYPE = "Number"
 
 -- ============================================================================
@@ -13,7 +13,7 @@ FuRegisterClass(FUSE_NAME, CT_Tool, {
     REG_NoCommonCtrls = true,
     REGS_Category = "TVPaint\\Number\\Camera",
     REGS_Name = FUSE_NAME,
-    REGS_OpDescription = "Returns the camera frame rate",
+    REGS_OpDescription = "Returns the clip frame rate",
     REGS_OpIconString = FUSE_NAME,
     REGS_IconID = "Icons.Tools.Icons.LightTrim",
 })
@@ -93,8 +93,8 @@ function Process(req)
     local fps = 0
 
     -- Extract the camera resolution
-    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table"  then
-        fps = tbl.project.camera.framerate
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table"  then
+        fps = tbl.project.clip.framerate
     end
 
     InFramerate:SetSource(Number(fps), 0)
