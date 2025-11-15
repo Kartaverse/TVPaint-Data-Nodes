@@ -5,7 +5,7 @@
 -- ============================================================================
 -- constants
 -- ============================================================================
-FUSE_NAME = "TVPaintImageCount"
+FUSE_NAME = "TVPaintLayerCount"
 DATATYPE = "Number"
 
 -- ============================================================================
@@ -17,7 +17,7 @@ FuRegisterClass(FUSE_NAME, CT_Tool, {
     REG_NoCommonCtrls = true,
     REGS_Category = "TVPaint\\Number\\Clip",
     REGS_Name = FUSE_NAME,
-    REGS_OpDescription = "Count the number of images in a TVPaint ScriptVal object",
+    REGS_OpDescription = "Count the number of layers in a TVPaint ScriptVal object",
     REGS_OpIconString = FUSE_NAME,
     REGS_IconID = "Icons.Tools.Icons.LightTrim",
 })
@@ -28,7 +28,7 @@ function Create()
         LINKID_DataType = "ScriptVal",
         LINK_Main = 1
     })
-    InImageCount = self:AddInput("Image Count", "ImageCount", {
+    InLayerCount = self:AddInput("Layer Count", "LayerCount", {
         LINKID_DataType = "Number",
         INP_SendRequest = false,
         INP_Required = false,
@@ -51,13 +51,13 @@ function Process(req)
     local tbl = InScriptVal:GetValue(req):GetValue()
     local num = 0
 
-    -- Extract the number of clip images
-    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip["image-count"] then
-      num = tonumber(tbl.project.clip["image-count"])
+    -- Extract the number of clip layers
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip.layers and type(tbl.project.clip.layers) == "table" then
+      num = tonumber(table.getn(tbl.project.clip.layers))
     end
 
-    InImageCount:SetSource(Number(num), 0)
-    InImageCount:SetAttrs({INP_Default = num})
+    InLayerCount:SetSource(Number(num), 0)
+    InLayerCount:SetAttrs({INP_Default = num})
 
 --    print("[ScriptVal Lua Table]")
 --    dump(tbl)

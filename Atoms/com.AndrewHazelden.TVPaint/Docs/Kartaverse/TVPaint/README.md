@@ -45,10 +45,11 @@ Camera
 - TVPaintCameraSize
 
 Clip
-- TVPaintImageCount
 - TVPaintClipMarkIn
 - TVPaintClipMarkOut
 - TVPaintClipName
+- TVPaintImageCount
+- TVPaintLayerCount
 
 Project
 - TVPaintProjectFormat

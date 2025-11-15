@@ -25,6 +25,7 @@ LGPL/GPL v3</p>
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipMarkOut.fuse",
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipName.fuse",
 		"Fuses/Kartaverse/TVPaint/Clip/TVPaintImageCount.fuse",
+		"Fuses/Kartaverse/TVPaint/Clip/TVPaintLayerCount.fuse",
 		"Fuses/Kartaverse/TVPaint/Create/TVPaintBackground.fuse",
 		"Fuses/Kartaverse/TVPaint/IO/TVPaintLoader.fuse",
 		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectFormat.fuse",
