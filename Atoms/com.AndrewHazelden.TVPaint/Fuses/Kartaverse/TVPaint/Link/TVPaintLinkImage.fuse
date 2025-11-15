@@ -1,0 +1,319 @@
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "TVPaintLinkImage"
+DATATYPE = "Image"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+	REGID_DataType = DATATYPE,
+	REGID_InputDataType = DATATYPE,
+	REG_NoCommonCtrls = true,
+	REGS_Category = "TVPaint\\Link",
+	REGS_Name = FUSE_NAME,
+	REGS_OpDescription = "Returns the TVPaint link image",
+	REGS_OpIconString = FUSE_NAME,
+	-- Should the current time setting be cached?
+	REG_TimeVariant = true,
+	REG_Unpredictable = true,
+	REGS_IconID = "Icons.Tools.Icons.PseudoColor",
+})
+
+function Create()
+	-- [[ Creates the user interface. ]]
+	InScriptVal = self:AddInput("ScriptVal", "ScriptVal", {
+		LINKID_DataType = "ScriptVal",
+		LINK_Main = 1
+	})
+	InBaseFolder = self:AddInput("Base Image Folder", "BaseFolder", {
+		LINKID_DataType = "Text",
+		-- INPID_InputControl = "TextEditControl",
+		INPID_InputControl = "FileControl",
+		FC_PathBrowse = true, -- The dialog will only allow you to select folders
+		INP_Passive = true,
+		TEC_Lines = 1,
+		LINK_Main = 2
+	})
+	InSeparator1 = self:AddInput("UISeparator1", "UISeparator1", {
+		IC_Visible = true,
+		INPID_InputControl = "SeparatorControl",
+		INP_External = false,
+	})
+	InTimeMode = self:AddInput("Time Mode", "TimeMode", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "ComboControl",
+		INP_Default = 0,
+		INP_Integer = true,
+		ICD_Width = 1,
+		{CCS_AddString = "Static Frame"},
+		{CCS_AddString = "Current Frame"},
+		{CCS_AddString = "Request Time"},
+		{CCS_AddString = "Time"},
+		CC_LabelPosition = "Vertical",
+		INP_DoNotifyChanged = true
+	})
+	InTime = self:AddInput("Time", "Time", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "ScrewControl",
+		INP_Integer = true,
+		INP_MinAllowed = 0.0,
+		INP_MinScale = 0.0,
+		INP_MaxScale = 100.0,
+		INP_Default = 0.0,
+		LINK_Main = 3
+	})
+	InSeparator2 = self:AddInput("UISeparator2", "UISeparator2", {
+		IC_Visible = true,
+		INPID_InputControl = "SeparatorControl",
+		INP_External = false,
+	})
+	InLayer = self:AddInput("Layer", "Layer", {
+		LINKID_DataType = "Number",
+		-- INPID_InputControl = "SliderControl",
+		INPID_InputControl = "ScrewControl",
+		INP_Default = 1,
+		INP_Integer = true,
+		INP_MinScale = 1,
+		INP_MaxScale = 16,
+		INP_MinAllowed = 1,
+		INP_MaxAllowed = 1e+38,
+		-- INP_MaxAllowed = 1000000,
+		LINK_Main = 4
+	})
+	InIndex = self:AddInput("Image ID", "Index", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "ScrewControl",
+		-- INPID_InputControl = "SliderControl",
+		INP_Default = 1,
+		INP_Integer = true,
+		INP_MinScale = 1,
+		INP_MaxScale = 1000,
+		INP_MinAllowed = 1,
+		INP_MaxAllowed = 1e+38,
+		-- INP_MaxAllowed = 1000000,
+		LINK_Main = 5
+	})
+	InShowInput = self:AddInput("Show Input", "ShowInput", {
+		LINKID_DataType = "Number",
+		INPID_InputControl = "CheckboxControl",
+		INP_Integer = true,
+		INP_Default = 1.0,
+		INP_External = false,
+		INP_DoNotifyChanged = true
+	})
+	OutData = self:AddOutput("Output" , "Output" , {
+		LINKID_DataType = "Image",
+		LINK_Main = 1
+	})
+end
+
+
+function NotifyChanged(inp, param, time)
+	--[[
+		Handles all input control events.
+
+		:param inp: Input that triggered a signal.
+		:type inp: Input
+
+		:param param: Parameter object holding the (new) value.
+		:type param: Parameter
+
+		:param time: Current frame number.
+		:type time: float
+	]]
+	if inp == InShowInput then
+		local visible
+		if param.Value == 1.0 then visible = true else visible = false end
+
+		InLayer:SetAttrs({LINK_Visible = visible})
+		InIndex:SetAttrs({LINK_Visible = visible})
+		InTime:SetAttrs({LINK_Visible = visible})
+	elseif inp == InTimeMode then
+		local visible
+		if param.Value == 3.0 then visible = true else visible = false end
+
+		InTime:SetAttrs({IC_Visible = visible})
+	end
+end
+
+function parse_filename(filename)
+	--[[
+		parseFilename() from bmd.scriptlib
+		A function for ripping a filepath into little bits
+
+		:param FullPath : The raw, original path sent to the function
+		:param FullPathMap : The PathMap expanded original path sent to the function
+		:param Path : The path, without filename
+		:param PathMap : The PathMap expanded path, without filename
+		:param FullName : The name of the clip w\ extension
+		:param Name : The name without extension
+		:param CleanName: The name of the clip, without extension or sequence
+		:param SNum : The original sequence string, or "" if no sequence
+		:param Number : The sequence as a numeric value, or nil if no sequence
+		:param Extension: The raw extension of the clip
+		:param Padding : Amount of padding in the sequence, or nil if no sequence
+		:param UNC : A true or false value indicating whether the path is a UNC path or not
+
+		:rtype: returns a table with the following
+	]]
+
+	local seq = {}
+	seq.FullPath = filename
+	seq.FullPathMap = self.Comp:MapPath(filename)
+	string.gsub(seq.FullPath, "^(.+[/\\])(.+)", function(path, name) seq.Path = path seq.FullName = name end)
+	string.gsub(seq.FullPath, "^(.+[/\\])(.+)", function(path, name) seq.PathMap = self.Comp:MapPath(path) seq.FullName = name end)
+	string.gsub(seq.FullName, "^(.+)(%..+)$", function(name, ext) seq.Name = name seq.Extension = ext end)
+
+	if not seq.Name then -- no extension?
+			seq.Name = seq.FullName
+	end
+
+	string.gsub(seq.Name, "^(.-)(%d+)$", function(name, SNum) seq.CleanName = name seq.SNum = SNum end)
+
+	if seq.SNum then
+			seq.Number = tonumber(seq.SNum)
+			seq.Padding = string.len(seq.SNum)
+	else
+			 seq.SNum = ""
+			 seq.CleanName = seq.Name
+	end
+
+	if seq.Extension == nil then seq.Extension = "" end
+	seq.UNC = (string.sub(seq.Path, 1, 2) == [[\\]])
+
+	return seq
+end
+
+function get(t, key)
+	--[[
+		Returns the value of a key in a table.
+
+		:param t: Table to get key value for.
+		:type t: table
+
+		:param key: Key to get value of.
+		:type key: string
+
+		:rtype: ?
+	]]
+	local value = nil
+	local found = false
+
+	for k, v in pairs(t) do
+		if k == key then
+			value = v
+			found = true
+			break
+		end
+	end
+
+	if not found then
+		error(string.format("no key '%s' found in ScriptVal table", key))
+	end
+
+	return value
+end
+
+function Process(req)
+	-- [[ Creates the output. ]]
+	local tbl = InScriptVal:GetValue(req):GetValue()
+	local folder = self.Comp:MapPath(InBaseFolder:GetValue(req).Value)
+	local key = InLayer:GetValue(req).Value
+	local idx = InIndex:GetValue(req).Value
+	
+	local value_str = ""
+	local num = 0
+
+	-- Extract the number of clip layers
+	if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip.layers and type(tbl.project.clip.layers) == "table" then
+		-- Clamp the layer index at the maximum range
+		max_keys = tonumber(table.getn(tbl.project.clip.layers))
+		if key > max_keys then
+			key = max_keys
+		end
+
+		-- Extract the layer number element
+		groupLayerTbl = get(tbl.project.clip.layers, key)
+		if type(groupLayerTbl) == "table" and groupLayerTbl.link then
+			local link = groupLayerTbl.link
+			-- Clamp the link index at the maximum range
+			max_link = tonumber(table.getn(groupLayerTbl.link))
+			if idx > max_link then
+				idx = max_link
+			end
+
+			-- Extract the link number element
+			groupLinkTbl = get(link, idx)
+			if type(groupLinkTbl) == "table" and groupLinkTbl.file then
+				value_str = groupLinkTbl.file
+			end
+		end
+	end
+
+	local filename = tostring(folder) .. value_str
+
+	-- Verify the file exists
+	if bmd.fileexists(filename) == true then
+		local frame
+		local t = InTime:GetValue(req).Value
+
+		local time_mode = InTimeMode:GetValue(req).Value
+		if time_mode == 0 then
+			-- Static Frame
+			local tbl = parse_filename(filename)
+			frame = tbl.Number or 0
+		elseif time_mode == 1 then
+			-- Current Frame
+			frame = self.Comp.CurrentTime
+		elseif time_mode == 2 then
+			-- Request Time
+			frame = req.Time
+		elseif time_mode == 3 then
+			-- Time Input
+			frame = tonumber(t)
+		end
+
+		if frame == nil then
+			frame = 0
+		end
+
+		-- Fusion 16.1+
+		local clip = Clip(filename, false)
+
+		-- Read the first frame of the image sequence
+		-- out = clip:GetFrame(frame)
+
+		-- Fusion 16.1+
+		clip:Open()
+		out = clip:GetFrame(frame)
+		clip:Close()
+
+		print('[Image] [Filename]', clip.Filename, '[Frame]', frame)
+
+		-- Push the result to the node's output connection
+		OutData:Set(req, out)
+	else
+		-- Image Size
+		local width = 0
+		local height = 0
+	
+		-- Extract the camera resolution
+		if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table"  then
+			width = tbl.project.camera.width
+			height = tbl.project.camera.height
+		end
+	
+		emptyImage = Image({
+			IMG_Width = compWidth,
+			IMG_Height = compHeight,
+		})
+	
+		-- Pixel defaults to black/clear
+		emptyImage:Fill(Pixel())
+	
+		-- Push the empty result to the node's output connection
+		OutData:Set(req, emptyImage)
+	end
+end

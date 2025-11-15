@@ -60,6 +60,7 @@ Layer
 
 Link
 - TVPaintLinkFilename
+- TVPaintLinkImage
 
 Project
 - TVPaintProjectFormat
