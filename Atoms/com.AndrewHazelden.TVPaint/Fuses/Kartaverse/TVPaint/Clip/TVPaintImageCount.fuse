@@ -1,0 +1,66 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "TVPaintImageCount"
+DATATYPE = "Number"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = "ScriptVal",
+    REG_NoCommonCtrls = true,
+    REGS_Category = "TVPaint\\Number\\Clip",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Count the number of images in a TVPaint ScriptVal object",
+    REGS_OpIconString = FUSE_NAME,
+    REGS_IconID = "Icons.Tools.Icons.LightTrim",
+})
+
+function Create()
+    -- [[ Creates the user interface. ]]
+    InScriptVal = self:AddInput("ScriptVal", "ScriptVal", {
+        LINKID_DataType = "ScriptVal",
+        LINK_Main = 1
+    })
+    InImageCount = self:AddInput("Image Count", "ImageCount", {
+        LINKID_DataType = "Number",
+        INP_SendRequest = false,
+        INP_Required = false,
+        INPID_InputControl = "SliderControl",
+        INP_DelayDefault = true,
+        LINK_ForceSave = true,
+        INP_Passive = true,
+        INP_Integer = true,
+        -- INP_Disabled = true,
+        -- LINK_Main = 2
+    })
+    OutNumber = self:AddOutput("Output", "Output", {
+        LINKID_DataType = DATATYPE,
+        LINK_Main = 1
+    })
+end
+
+function Process(req)
+    -- [[ Creates the output. ]]
+    local tbl = InScriptVal:GetValue(req):GetValue()
+    local num = 0
+
+    -- Extract: project.imagegroups.#
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip["image-count"] then
+      num = tonumber(tbl.project.clip["image-count"])
+    end
+
+    InImageCount:SetSource(Number(num), 0)
+    InImageCount:SetAttrs({INP_Default = num})
+
+--    print("[ScriptVal Lua Table]")
+--    dump(tbl)
+
+    OutNumber:Set(req, Number(num))
+end

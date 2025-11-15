@@ -1,0 +1,183 @@
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "TVPaintBackground"
+DATATYPE = "Image"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "TVPaint\\Create",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Creates a background from the TVPaint camera resolution settings",
+    REGS_OpIconString = FUSE_NAME,
+    -- Should the current time setting be cached?
+    REG_TimeVariant = false,
+    REG_Unpredictable = false,
+    REGS_IconID = "Icons.Tools.Icons.PseudoColor",
+})
+
+
+function Create()
+    -- [[ Creates the user interface. ]]
+    InScriptVal = self:AddInput("ScriptVal", "ScriptVal", {
+        LINKID_DataType = "ScriptVal",
+        LINK_Main = 1
+    })
+
+    self:RemoveControlPage('Controls')
+
+    self:AddControlPage('Color', {CTID_DIB_ID  = 'Icons.Tools.Tabs.Color'})
+
+    InR = self:AddInput("Red", "Red", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ColorControl",
+        LINKS_Name = "Color",
+        INP_MinScale = 0.0,
+        INP_MaxScale = 1.0,
+        INP_Default  = 1.0,
+        IC_ControlGroup = 1,
+        IC_ControlID = 0,
+        LINK_Main = 2,
+    })
+
+    InG = self:AddInput("Green", "Green", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale = 0.0,
+        INP_MaxScale = 1.0,
+        INP_Default  = 1.0,
+        IC_ControlGroup = 1,
+        IC_ControlID = 1,
+        LINK_Main = 3,
+    })
+
+    InB = self:AddInput("Blue", "Blue", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale = 0.0,
+        INP_MaxScale = 1.0,
+        INP_Default  = 1.0,
+        IC_ControlGroup = 1,
+        IC_ControlID = 2,
+        LINK_Main = 4,
+    })
+
+    InA = self:AddInput("Alpha", "Alpha", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale = 0.0,
+        INP_MaxScale = 1.0,
+        INP_Default  = 1.0,
+        IC_ControlGroup = 1,
+        IC_ControlID = 3,
+        LINK_Main = 5,
+    })
+
+    InShowColorInput = self:AddInput("Show Color Inputs", "ShowColorInput", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 0.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+
+    self:AddControlPage('Image', {CTID_DIB_ID  = 'Icons.Tools.Tabs.Image'})
+
+    InWidth = self:AddInput("Width", "Width", {
+        LINKID_DataType = "Number",
+        INP_SendRequest = false,
+        INP_Required = false,
+        INPID_InputControl = "SliderControl",
+        INP_DelayDefault = true,
+        LINK_ForceSave = true,
+        INP_Passive = true,
+        INP_Integer = true,
+        -- INP_Disabled = true,
+        -- LINK_Main = 1
+    })
+    InHeight = self:AddInput("Height", "Height", {
+        LINKID_DataType = "Number",
+        INP_SendRequest = false,
+        INP_Required = false,
+        INPID_InputControl = "SliderControl",
+        INP_DelayDefault = true,
+        LINK_ForceSave = true,
+        INP_Passive = true,
+        INP_Integer = true,
+        -- INP_Disabled = true,
+        -- LINK_Main = 2
+    })
+
+    OutImage = self:AddOutput("Output", "Output", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+    })
+end
+
+function NotifyChanged(inp, param, time)
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+    if inp == InShowColorInput then
+        local visible
+        if param.Value == 1.0 then visible = true else visible = false end
+
+        InR:SetAttrs({LINK_Visible = visible})
+        InG:SetAttrs({LINK_Visible = visible})
+        InB:SetAttrs({LINK_Visible = visible})
+        InA:SetAttrs({LINK_Visible = visible})
+    end
+end
+
+function Process(req)
+    local tbl = InScriptVal:GetValue(req):GetValue()
+
+    -- Image Size
+    local width = 0
+    local height = 0
+
+    -- Extract the camera resolution
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table"  then
+        width = tbl.project.camera.width
+        height = tbl.project.camera.height
+    end
+
+    InWidth:SetSource(Number(width), 0)
+    InWidth:SetAttrs({INP_Default = width})
+
+    InHeight:SetSource(Number(height), 0)
+    InHeight:SetAttrs({INP_Default = height})
+
+    -- Color
+    local r = InR:GetValue(req).Value
+    local g = InG:GetValue(req).Value
+    local b = InB:GetValue(req).Value
+    local a = InA:GetValue(req).Value
+    local rgba = Pixel({R = r, G = g, B = b, A = a})
+
+    -- Create image context
+    local out = Image({
+        IMG_Width = width,
+        IMG_Height = height,
+        IMG_NoData = req:IsPreCalc(),
+        IMG_Depth = IMDP_128bitFloat,
+    })
+    out:Fill(rgba)
+
+    OutImage:Set(req, out)
+end

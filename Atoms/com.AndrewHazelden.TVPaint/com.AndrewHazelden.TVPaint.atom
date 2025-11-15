@@ -1,0 +1,33 @@
+Atom {
+	Name = "TVPaint Data Nodes",
+	Category = "Bin",
+	Author = "Andrew Hazelden",
+	Version = 1,
+	Date = {2025, 11, 15},
+	Description = [[<h1>TVPaint Data Nodes</h1>
+<p>The TVPaint data nodes for Blackmagic Design Resolve/Fusion allow you to interact with 2D animation data inside a node graph. This approach works with a series of nodal operators that allow you to edit and modify the TVPaint data on the fly.</p>
+
+<p>Note: The TVPaint toolset's capabilities are enhanced with the installation of the Reactor package named "Vonk Ultra" that is found in the "Kartaverse/Vonk Ultra" category in the Reactor window.</p>
+
+<p>Open-Source License<br>
+LGPL/GPL v3</p>
+
+<p>TVPaint for Fusion is maintained by:<br>
+<a href="mailto:andrew@andrewhazelden.com">Andrew Hazelden</a></p>
+
+]],
+	Deploy = {
+		"Docs/Kartaverse/TVPaint/README.md",
+		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraFPS.fuse",
+		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraPixelAspectRatio.fuse",
+		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraSize.fuse",
+		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipMarkIn.fuse",
+		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipMarkOut.fuse",
+		"Fuses/Kartaverse/TVPaint/Clip/TVPaintClipName.fuse",
+		"Fuses/Kartaverse/TVPaint/Clip/TVPaintImageCount.fuse",
+		"Fuses/Kartaverse/TVPaint/Create/TVPaintBackground.fuse",
+		"Fuses/Kartaverse/TVPaint/IO/TVPaintLoader.fuse",
+		"Scripts/Comp/TVPaint/Open/Show Comps Folder.lua",
+		"Scripts/Comp/TVPaint/Open/Show Fuses Folder.lua",
+	},
+}

@@ -1,0 +1,149 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local jsonutils = self and require("vjsonutils") or nil
+local arrayutils = self and require("varrayutils") or nil
+local textutils = self and require("vtextutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "TVPaintLoader"
+DATATYPE = "Text"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = "ScriptVal",
+    -- REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "TVPaint\\IO",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Import a TVPaint JSON file",
+    REGS_OpIconString = FUSE_NAME,
+    REG_OpNoMask = true,
+    REG_NoBlendCtrls = true,
+    REG_NoObjMatCtrls = true,
+    REG_NoMotionBlurCtrls = true,
+    -- Icon shown in the "Select Tool" dialog and the "Tile Picture"
+    -- REGS_IconID = "Icons.Tools.Icons.TextPlus",
+    REGS_IconID = "Icons.Tools.Icons.Loader",
+})
+
+function Create()
+    -- [[ Creates the user interface. ]]
+    InInputSource = self:AddInput("Input Source", "InputSource", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "MultiButtonControl",
+        INP_Default = 0,
+        { MBTNC_AddButton = "File", MBTNCD_ButtonWidth = 1 / 3, },
+        { MBTNC_AddButton = "URL",  MBTNCD_ButtonWidth = 1 / 3, },
+        { MBTNC_AddButton = "Text",  MBTNCD_ButtonWidth = 1 / 3, },
+        INP_Integer = true,
+        INP_DoNotifyChanged = true,
+    })
+    InFile = self:AddInput("Filename" , "Filename" , {
+        LINKID_DataType = "Text",
+        INPID_InputControl = "FileControl",
+        FC_IsSaver = false,
+        FC_ClipBrowse = false,
+        LINK_Visible = true,
+        FCS_FilterString =  "JSON (*.json)|*.json|Files (*.*)|*.*|",
+        LINK_Main = 1
+    })
+    InURL = self:AddInput("URL", "URL", {
+        LINKID_DataType = "Text",
+        INPID_InputControl = "TextEditControl",
+        TEC_Lines = 1,
+        LINK_Main = 2
+    })
+    InData = self:AddInput("Input", "Input", {
+        LINKID_DataType = "Text",
+        -- INPID_InputControl = "TextEditControl",
+        -- IC_NoLabel = true,
+        -- TECS_Language = "lua",
+        -- TEC_Lines = 10,
+        LINK_Main = 3
+    })
+    InSeparator = self:AddInput("UISeparator1", "UISeparator1", {
+        IC_Visible = true,
+        INPID_InputControl = "SeparatorControl",
+        INP_External = false,
+    })
+    InSort = self:AddInput("Sort List", "Sort", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 0.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+    OutScriptVal = self:AddOutput("ScriptVal", "ScriptVal", {
+        LINKID_DataType = "ScriptVal",
+        LINK_Main = 1
+    })
+end
+
+function NotifyChanged(inp, param, time)
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+    if inp == InInputSource then
+        if param.Value == 0.0 then 
+            InFile:SetAttrs({IC_Visible = true, LINK_Visible = true})
+            InURL:SetAttrs({IC_Visible = false, LINK_Visible = false})
+            InData:SetAttrs({IC_Visible = false, LINK_Visible = false})
+        elseif param.Value == 1.0 then
+            InFile:SetAttrs({IC_Visible = false, LINK_Visible = false})
+            InURL:SetAttrs({IC_Visible = true, LINK_Visible = true})
+            InData:SetAttrs({IC_Visible = false, LINK_Visible = false})
+        elseif param.Value == 2.0 then
+            InFile:SetAttrs({IC_Visible = false, LINK_Visible = false})
+            InURL:SetAttrs({IC_Visible = false, LINK_Visible = false})
+            InData:SetAttrs({IC_Visible = true, LINK_Visible = true})
+        end
+    end
+end
+
+function Process(req)
+    -- [[ Creates the output. ]]
+    local json_str
+
+    local source = InInputSource:GetValue(req).Value
+    if source == 0 then
+        -- File
+        local rel_path = InFile:GetValue(req).Value
+        local abs_path = self.Comp:MapPath(rel_path)
+        json_str = jsonutils.read_json_string(abs_path)
+    elseif source == 1 then
+        -- URL
+        local url = InURL:GetValue(req).Value
+        json_str = textutils.read_url(url)
+    elseif source == 2 then
+        -- Text
+        json_str = InData:GetValue(req).Value
+    end
+
+    local sort = InSort:GetValue(req).Value
+    local tbl = jsonutils.decode(json_str)
+
+    -- Sort the array alphabetically
+    if sort == 1.0 then
+        table.sort(tbl)
+    end
+
+--    print("[ScriptVal Lua Table]")
+--    dump(tbl)
+
+    OutScriptVal:Set(req, ScriptValParam(tbl))
+end
