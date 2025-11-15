@@ -58,6 +58,9 @@ Layer
 - TVPaintLayerName
 - TVPaintLayerOpacity
 
+Link
+- TVPaintLinkFilename
+
 Project
 - TVPaintProjectFormat
 - TVPaintProjectVersion
