@@ -33,12 +33,6 @@ To run TVPaint based workflows on your Resolve/Fusion system you will need the f
 
 The TVPaint data nodes are separated into the following categories and sub-categories based upon the function they perform:
 
-IO
-- TVPaintLoader
-
-Create
-- TVPaintBackground
-
 Camera
 - TVPaintCameraFPS
 - TVPaintCameraPixelAspectRatio
@@ -51,7 +45,16 @@ Clip
 - TVPaintClipMarkOut
 - TVPaintClipName
 - TVPaintImageCount
+
+Create
+- TVPaintBackground
+
+IO
+- TVPaintLoader
+
+Layer
 - TVPaintLayerCount
+- TVPaintLayerName
 
 Project
 - TVPaintProjectFormat

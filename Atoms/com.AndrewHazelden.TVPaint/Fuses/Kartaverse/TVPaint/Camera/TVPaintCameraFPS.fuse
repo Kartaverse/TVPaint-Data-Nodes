@@ -11,7 +11,7 @@ FuRegisterClass(FUSE_NAME, CT_Tool, {
     REGID_DataType = DATATYPE,
     REGID_InputDataType = DATATYPE,
     REG_NoCommonCtrls = true,
-    REGS_Category = "TVPaint\\Number\\Camera",
+    REGS_Category = "TVPaint\\Camera",
     REGS_Name = FUSE_NAME,
     REGS_OpDescription = "Returns the camera frame rate",
     REGS_OpIconString = FUSE_NAME,

@@ -1,8 +1,8 @@
 -- ============================================================================
 -- constants
 -- ============================================================================
-FUSE_NAME = "TVPaintClipFPS"
-DATATYPE = "Number"
+FUSE_NAME = "TVPaintLayerName"
+DATATYPE = "Text"
 
 -- ============================================================================
 -- fuse
@@ -11,11 +11,11 @@ FuRegisterClass(FUSE_NAME, CT_Tool, {
     REGID_DataType = DATATYPE,
     REGID_InputDataType = DATATYPE,
     REG_NoCommonCtrls = true,
-    REGS_Category = "TVPaint\\Camera",
+    REGS_Category = "TVPaint\\Layer",
     REGS_Name = FUSE_NAME,
-    REGS_OpDescription = "Returns the clip frame rate",
+    REGS_OpDescription = "Returns the layer name",
     REGS_OpIconString = FUSE_NAME,
-    REGS_IconID = "Icons.Tools.Icons.LightTrim",
+    REGS_IconID = "Icons.Tools.Icons.TextPlus",
 })
 
 function Create()
@@ -24,19 +24,29 @@ function Create()
         LINKID_DataType = "ScriptVal",
         LINK_Main = 1
     })
-    InFramerate = self:AddInput("Framerate", "Framerate", {
+    InLayer = self:AddInput("Layer", "Layer", {
         LINKID_DataType = "Number",
-        INP_SendRequest = false,
-        INP_Required = false,
-        INPID_InputControl = "SliderControl",
-        INP_DelayDefault = true,
-        LINK_ForceSave = true,
-        INP_Passive = true,
-        -- INP_Disabled = true,
-        -- LINK_Main = 2
+        -- INPID_InputControl = "SliderControl",
+        INPID_InputControl = "ScrewControl",
+        INP_Default = 1,
+        INP_Integer = true,
+        INP_MinScale = 1,
+        INP_MaxScale = 16,
+        INP_MinAllowed = 1,
+        INP_MaxAllowed = 1e+38,
+        -- INP_MaxAllowed = 1000000,
+        LINK_Main = 2
     })
-    OutFramerate = self:AddOutput("framerate", "framerate", {
+    InShowInput = self:AddInput("Show Input", "ShowInput", {
         LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 1.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+    OutText = self:AddOutput("Output" , "Output" , {
+        LINKID_DataType = "Text",
         LINK_Main = 1
     })
 end
@@ -55,6 +65,12 @@ function NotifyChanged(inp, param, time)
         :param time: Current frame number.
         :type time: float
     ]]
+        if inp == InShowInput then
+        local visible
+        if param.Value == 1.0 then visible = true else visible = false end
+
+        InLayer:SetAttrs({LINK_Visible = visible})
+    end
 end
 
 function get(t, key)
@@ -90,16 +106,27 @@ end
 function Process(req)
     -- [[ Creates the output. ]]
     local tbl = InScriptVal:GetValue(req):GetValue()
-    local fps = 0
+    local key = InLayer:GetValue(req).Value
 
-    -- Extract the camera resolution
-    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table"  then
-        fps = tbl.project.clip.framerate
+    -- Read the layer name
+    local value_str = ""
+    local num = 0
+    -- Extract the number of clip layers
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip.layers and type(tbl.project.clip.layers) == "table" then
+      -- Clamp the layer index at the maximum range
+      max_keys = tonumber(table.getn(tbl.project.clip.layers))
+      if key > max_keys then
+        key = max_keys
+      end
+
+      -- Extract the layer number element
+      groupTbl = get(tbl.project.clip.layers, key)
+      if type(groupTbl) == "table" and groupTbl.name then
+        value_str = groupTbl.name
+      end
     end
 
-    InFramerate:SetSource(Number(fps), 0)
-    InFramerate:SetAttrs({INP_Default = fps})
-
-    OutFramerate:Set(req, fps)
+    local out = Text(value_str)
+    OutText:Set(req, out)
 end
 

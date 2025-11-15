@@ -15,7 +15,7 @@ FuRegisterClass(FUSE_NAME, CT_Tool, {
     REGID_DataType = DATATYPE,
     REGID_InputDataType = "ScriptVal",
     REG_NoCommonCtrls = true,
-    REGS_Category = "TVPaint\\Number\\Clip",
+    REGS_Category = "TVPaint\\Clip",
     REGS_Name = FUSE_NAME,
     REGS_OpDescription = "Count the number of images in a TVPaint ScriptVal object",
     REGS_OpIconString = FUSE_NAME,
