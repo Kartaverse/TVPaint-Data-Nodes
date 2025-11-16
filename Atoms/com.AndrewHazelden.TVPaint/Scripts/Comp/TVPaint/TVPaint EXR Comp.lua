@@ -1,5 +1,5 @@
 --[[--
-TVPaint EXR Comp - v1 2025-11-16 01.54 PM
+TVPaint EXR Comp - v1 2025-11-16 03.22 PM
 
 Auto-build an EXR comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -249,7 +249,7 @@ function AskForInput()
 		addBackground = itm.AddBackground.Checked
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 
-		setPreferenceData("TVPaint.Direction", itm.BuildDirection.Checked, verbose)
+		setPreferenceData("TVPaint.Direction", itm.BuildDirection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
 		setPreferenceData("TVPaint.addBackground", itm.AddBackground.Checked, verbose)
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)

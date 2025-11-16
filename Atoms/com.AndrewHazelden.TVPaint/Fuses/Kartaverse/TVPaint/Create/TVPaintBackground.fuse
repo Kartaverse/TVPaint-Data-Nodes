@@ -153,7 +153,7 @@ function Process(req)
     local b = 0
     local a = 1
 
-    -- Extract the camera resolution
+    -- Extract the color
     if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.bg and type(tbl.project.clip.bg) == "table" then
         r = tbl.project.clip.bg.red * (1 / 255)
         g = tbl.project.clip.bg.green * (1 / 255)
