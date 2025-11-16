@@ -1,0 +1,120 @@
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "TVPaintClipBG"
+DATATYPE = "Number"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "TVPaint\\Camera",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Returns the clip bg color",
+    REGS_OpIconString = FUSE_NAME,
+    REGS_IconID = "Icons.Tools.Icons.LightTrim",
+})
+
+function Create()
+    -- [[ Creates the user interface. ]]
+    InScriptVal = self:AddInput("ScriptVal", "ScriptVal", {
+        LINKID_DataType = "ScriptVal",
+        LINK_Main = 1
+    })
+    InNormalizeRange = self:AddInput("Normalize Range", "NormalizeRange", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 1.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+    OutR = self:AddOutput("R", "R", {
+        LINKID_DataType = "Number",
+        LINK_Main = 1
+    })
+    OutG = self:AddOutput("G", "G", {
+        LINKID_DataType = "Number",
+        LINK_Main = 2
+    })
+    OutB = self:AddOutput("B", "B", {
+        LINKID_DataType = "Number",
+        LINK_Main = 3
+    })
+end
+
+
+function NotifyChanged(inp, param, time)
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+end
+
+function get(t, key)
+    --[[
+        Returns the value of a key in a table.
+
+        :param t: Table to get key value for.
+        :type t: table
+
+        :param key: Key to get value of.
+        :type key: string
+
+        :rtype: ?
+    ]]
+    local value = nil
+    local found = false
+
+    for k, v in pairs(t) do
+        if k == key then
+            value = v
+            found = true
+            break
+        end
+    end
+
+    if not found then
+        error(string.format("no key '%s' found in ScriptVal table", key))
+    end
+
+    return value
+end
+
+function Process(req)
+    -- [[ Creates the output. ]]
+    local tbl = InScriptVal:GetValue(req):GetValue()
+    local r = 0
+    local g = 0
+    local b = 0
+
+    -- Extract the camera resolution
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.bg and type(tbl.project.clip.bg) == "table" then
+        r = tbl.project.clip.bg.red
+        g = tbl.project.clip.bg.green
+        b = tbl.project.clip.bg.blue
+    end
+
+    -- Normalize the color from 0-255 to a 0-1 range
+    local norm = InNormalizeRange:GetValue(req).Value
+    if norm == 1.0 then
+        r = r * (1 / 255)
+        g = g * (1 / 255)
+        b = b * (1 / 255)
+    end
+
+    OutR:Set(req, r)
+    OutG:Set(req, g)
+    OutB:Set(req, b)
+end
+
