@@ -10,7 +10,7 @@ BaseImageFolder = "Comp:/"
 
 -- MultiMerge Options
 autoNameLayers = true
-alphaGain = true
+alphaGain = false
 
 print("[TVPaint] Build Comp Script")
 print("[Auto Name Layers] ", autoNameLayers)
@@ -67,8 +67,8 @@ function Main()
 					layer_max = tonumber(table.getn(tbl.project.clip.layers)) - 2
 				end
 
-				for i = 1, layer_max do
-				-- for i = layer_max, 1, -1 do
+				-- for i = 1, layer_max do
+				for i = layer_max, 1, -1 do
 
 					-- Add the node
 					local img = comp:AddTool("Fuse.TVPaintLinkImage", -32768, -32768)
