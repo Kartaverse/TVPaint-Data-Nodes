@@ -137,9 +137,13 @@ function Process(req)
     local height = 0
 
     -- Extract the camera resolution
-    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table"  then
-        width = tbl.project.camera.width
-        height = tbl.project.camera.height
+--    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table"  then
+--        width = tonumber(tbl.project.camera.width)
+--        height = tonumber(tbl.project.camera.height)
+--    end
+    if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.width and tbl.project.clip.height then
+        width = tonumber(tbl.project.clip.width)
+        height = tonumber(tbl.project.clip.height)
     end
 
     InWidth:SetSource(Number(width), 0)

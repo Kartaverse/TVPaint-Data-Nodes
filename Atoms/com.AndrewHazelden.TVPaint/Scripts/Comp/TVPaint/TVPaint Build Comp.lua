@@ -9,6 +9,8 @@ The "addNode" control allows you to choose if you want to insert a Loader or TVP
 
 The "addOutput" control allows you to choose if you want to insert a MultiMerge or LifeSaver node.
 
+The "missingFrames" control defines how should missing frames be handled with Loader nodes
+
 The "baseImageFolder" control defines where the image layer folders are in relation to the active composite. This setting fills in the value used by the TVPaintLinkImage node.
 
 The "adjustRenderRange" control sets the RenderEnd range to match the TVPaint image count.
@@ -45,8 +47,11 @@ direction = 1
 -- Should the a Loader or TVPaint Layer node be used
 addNode = 1
 
--- Should the a LifeSaver or MultiMerge  node be used
+-- Should the LifeSaver or MultiMerge  node be used
 addOutput = 1
+
+-- How should missing frames be handled with Loader nodes
+missingFrames = 1
 
 -- Debugging log detail
 local verbose = true
@@ -181,7 +186,7 @@ function AskForInput()
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,255
+	local width,height = 300,285
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -223,6 +228,17 @@ function AskForInput()
 				ui:ComboBox{
 					ID = "AddOutput",
 					Text = "Add Output Node",
+				},
+			},
+			ui:HGroup{
+				Weight = 0.01,
+				ui:Label{
+					ID = "MissingFramesLabel",
+					Text = "Missing Frames",
+				},
+				ui:ComboBox{
+					ID = "MissingFrames",
+					Text = "Missing Frames",
 				},
 			},
 			ui:CheckBox{
@@ -277,12 +293,20 @@ function AskForInput()
 	itm.AddNode:AddItem("TVPaint Layer")
 	-- Restore the AddNode preference
 	itm.AddNode.CurrentIndex = addNode
-	
+
 	-- Add the items to the ComboBox menu
 	itm.AddOutput:AddItem("LifeSaver")
 	itm.AddOutput:AddItem("MultiMerge")
 	-- Restore the AddNode preference
 	itm.AddOutput.CurrentIndex = addOutput
+
+	-- Add the items to the ComboBox menu
+	itm.MissingFrames:AddItem("Fail")
+	itm.MissingFrames:AddItem("Hold Prevous")
+	itm.MissingFrames:AddItem("Output Color")
+	itm.MissingFrames:AddItem("Wait")
+	-- Restore the AddNode preference
+	itm.MissingFrames.CurrentIndex = missingFrames
 
 	-- The app:AddConfig() command that will capture the "Control + W" or "Control + F4" hotkeys so they will close the window instead of closing the foreground composite.
 	app:AddConfig("TVPaint", {
@@ -304,6 +328,7 @@ function AskForInput()
 		direction = itm.BuildDirection.CurrentIndex
 		addNode = itm.AddNode.CurrentIndex
 		addOutput = itm.AddOutput.CurrentIndex
+		missingFrames = itm.MissingFrames.CurrentIndex
 		adjustRenderRange = itm.AdjustRenderRange.Checked
 		addBackground = itm.AddBackground.Checked
 		autoNameLayers = itm.AutoNameLayers.Checked
@@ -313,6 +338,7 @@ function AskForInput()
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.addNode", itm.AddNode.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.addOutput", itm.AddOutput.CurrentIndex, verbose)
+		setPreferenceData("TVPaint.missingFrames", itm.MissingFrames.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
 		setPreferenceData("TVPaint.addBackground", itm.AddBackground.Checked, verbose)
 		setPreferenceData("TVPaint.autoNameLayers", itm.AutoNameLayers.Checked, verbose)
@@ -352,6 +378,7 @@ function Main()
 			print("[Reverse Layer Order] ", reverseLayerOrder)
 			print("[Adjust Render Range] ", adjustRenderRange)
 			print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
+			print("[Missing Frames] ", missingFrames)
 
 			-- Starting node position
 			local flow = comp.CurrentFrame.FlowView
@@ -437,6 +464,15 @@ function Main()
 							bg.TopLeftAlpha[fu.TIME_UNDEFINED] = 1.0
 						end
 
+						-- Set the dimensions
+						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.width and tbl.project.clip.height then
+							bg.Width[fu.TIME_UNDEFINED] = tonumber(tbl.project.clip.width)
+							bg.Height[fu.TIME_UNDEFINED] = tonumber(tbl.project.clip.height)
+
+							-- Turn off auto sizing
+							bg.UseFrameFormatSettings[fu.TIME_UNDEFINED] = 0
+						end
+
 						-- Save the Background node to a table
 						table.insert(imgTbl, bg)
 						
@@ -461,7 +497,7 @@ function Main()
 						end
 
 						-- Hold previous frames
-						ldr.MissingFrames[fu.TIME_UNDEFINED] = 1
+						ldr.MissingFrames[fu.TIME_UNDEFINED] = missingFrames
 
 						-- Update the Loader node filename
 						local link = groupTbl.link
@@ -493,13 +529,13 @@ function Main()
 		
 						-- Shift the node to the right
 						local ls_x, ls_y = flow:GetPos(ls)
-							if direction == 0 then
-								-- vertical build
-								flow:SetPos(ls, origin_x + 2, origin_y + 1)
-							else
-								-- horizontal build
-								flow:SetPos(ls, origin_x + 2, origin_y + 1)
-							end
+						if direction == 0 then
+							-- vertical build
+							flow:SetPos(ls, origin_x + 2, origin_y + 1)
+						else
+							-- horizontal build
+							flow:SetPos(ls, origin_x + 2, origin_y + 1)
+						end
 		
 						-- Name the EXR
 						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
