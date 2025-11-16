@@ -1,12 +1,13 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-16 04.06 PM
+TVPaint Build Comp - v1 2025-11-16 04.35 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
-
 
 ## Controls:
 
 The "addNode" control allows you to choose if you want to insert a Loader or TVPaintLayer node.
+
+The "addOutput" control allows you to choose if you want to insert a MultiMerge or LifeSaver node.
 
 The "baseImageFolder" control defines where the image layer folders are in relation to the active composite. This setting fills in the value used by the TVPaintLinkImage node.
 
@@ -43,6 +44,9 @@ direction = 1
 
 -- Should the a Loader or TVPaint Layer node be used
 addNode = 1
+
+-- Should the a LifeSaver or MultiMerge  node be used
+addOutput = 1
 
 -- Debugging log detail
 local verbose = true
@@ -104,6 +108,48 @@ function getPreferenceData(pref, defaultValue, debugPrint)
 	return newPreference
 end
 
+------------------------------------------------------------------------------
+-- parseFilename() from bmd.scriptlib
+--
+-- this is a great function for ripping a filepath into little bits
+-- returns a table with the following
+--
+-- FullPath : The raw, original path sent to the function
+-- Path : The path, without filename
+-- FullName : The name of the clip w\ extension
+-- Name : The name without extension
+-- CleanName: The name of the clip, without extension or sequence
+-- SNum : The original sequence string, or "" if no sequence
+-- Number : The sequence as a numeric value, or nil if no sequence
+-- Extension: The raw extension of the clip
+-- Padding : Amount of padding in the sequence, or nil if no sequence
+-- UNC : A true or false value indicating whether the path is a UNC path or not
+------------------------------------------------------------------------------
+function parseFilename(filename)
+	local seq = {}
+	seq.FullPath = filename
+	string.gsub(seq.FullPath, "^(.+[/\\])(.+)", function(path, name) seq.Path = path seq.FullName = name end)
+	string.gsub(seq.FullName, "^(.+)(%..+)$", function(name, ext) seq.Name = name seq.Extension = ext end)
+
+	if not seq.Name then -- no extension?
+		seq.Name = seq.FullName
+	end
+
+	string.gsub(seq.Name, "^(.-)(%d+)$", function(name, SNum) seq.CleanName = name seq.SNum = SNum end)
+
+	if seq.SNum then
+		seq.Number = tonumber( seq.SNum )
+		seq.Padding = string.len( seq.SNum )
+	else
+		seq.SNum = ""
+		seq.CleanName = seq.Name
+	end
+
+	if seq.Extension == nil then seq.Extension = "" end
+	seq.UNC = ( string.sub(seq.Path, 1, 2) == [[\\]] )
+
+	return seq
+end
 
 -------------------------------------------------------------------------------
 -- Set a fusion specific preference value
@@ -126,6 +172,7 @@ end
 function AskForInput()
 	direction = getPreferenceData("TVPaint.direction", 1, verbose)
 	addNode = getPreferenceData("TVPaint.addNode", 1, verbose)
+	addOutput = getPreferenceData("TVPaint.addOutput", 1, verbose)
 	adjustRenderRange = getPreferenceData("TVPaint.adjustRenderRange", adjustRenderRange, verbose)
 	addBackground = getPreferenceData("TVPaint.addBackground", addBackground, verbose)
 	autoNameLayers = getPreferenceData("TVPaint.autoNameLayers", autoNameLayers, verbose)
@@ -134,7 +181,7 @@ function AskForInput()
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,235
+	local width,height = 300,255
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -160,11 +207,22 @@ function AskForInput()
 				Weight = 0.01,
 				ui:Label{
 					ID = "AddNodeLabel",
-					Text = "Add Node",
+					Text = "Add Media Node",
 				},
 				ui:ComboBox{
 					ID = "AddNode",
-					Text = "Add Node",
+					Text = "Add Media Node",
+				},
+			},
+			ui:HGroup{
+				Weight = 0.01,
+				ui:Label{
+					ID = "AddOutputLabel",
+					Text = "Add Output Node",
+				},
+				ui:ComboBox{
+					ID = "AddOutput",
+					Text = "Add Output Node",
 				},
 			},
 			ui:CheckBox{
@@ -219,6 +277,12 @@ function AskForInput()
 	itm.AddNode:AddItem("TVPaint Layer")
 	-- Restore the AddNode preference
 	itm.AddNode.CurrentIndex = addNode
+	
+	-- Add the items to the ComboBox menu
+	itm.AddOutput:AddItem("LifeSaver")
+	itm.AddOutput:AddItem("MultiMerge")
+	-- Restore the AddNode preference
+	itm.AddOutput.CurrentIndex = addOutput
 
 	-- The app:AddConfig() command that will capture the "Control + W" or "Control + F4" hotkeys so they will close the window instead of closing the foreground composite.
 	app:AddConfig("TVPaint", {
@@ -239,6 +303,7 @@ function AskForInput()
 	function win.On.OKButton.Clicked(ev)
 		direction = itm.BuildDirection.CurrentIndex
 		addNode = itm.AddNode.CurrentIndex
+		addOutput = itm.AddOutput.CurrentIndex
 		adjustRenderRange = itm.AdjustRenderRange.Checked
 		addBackground = itm.AddBackground.Checked
 		autoNameLayers = itm.AutoNameLayers.Checked
@@ -247,6 +312,7 @@ function AskForInput()
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.addNode", itm.AddNode.CurrentIndex, verbose)
+		setPreferenceData("TVPaint.addOutput", itm.AddOutput.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
 		setPreferenceData("TVPaint.addBackground", itm.AddBackground.Checked, verbose)
 		setPreferenceData("TVPaint.autoNameLayers", itm.AutoNameLayers.Checked, verbose)
@@ -278,6 +344,8 @@ function Main()
 			end
 
 			print("[Base Image Folder] ", baseImageFolder)
+			print("[Auto Media Node] ", addNode)
+			print("[Auto Output Node] ", addOutput)
 			print("[Auto Name Layers] ", autoNameLayers)
 			print("[Alpha Gain Zero] ", alphaGain)
 			print("[Add Background] ", addBackground)
@@ -293,7 +361,11 @@ function Main()
 			if toolType == "ScriptVal" then
 				-- Start Undo
 				comp:StartUndo("Build Comp")
-				
+
+				-- Disable the file browser dialog
+				local AutoClipBrowse = app:GetPrefs('Global.UserInterface.AutoClipBrowse')
+				app:SetPrefs('Global.UserInterface.AutoClipBrowse', false)
+
 				-- Lock the comp flow area
 				comp:Lock()
 
@@ -370,7 +442,7 @@ function Main()
 						
 						table.insert(imgNameTbl, "bg")
 					end
-					
+
 					for i = startLayer, endLayer, stepBy do
 						-- Deselect all nodes
 						comp.CurrentFrame.FlowView:Select() 
@@ -395,15 +467,8 @@ function Main()
 						local link = groupTbl.link
 						local groupLinkTbl = get(link, i)
 						if type(groupLinkTbl) == "table" and groupLinkTbl.file then
-							-- Disable the file browser dialog
-							local AutoClipBrowse = app:GetPrefs('Global.UserInterface.AutoClipBrowse')
-							app:SetPrefs('Global.UserInterface.AutoClipBrowse', false)
-
 							local ldrFilename = tostring(baseImageFolder) .. tostring(groupLinkTbl.file)
 							ldr.Clip[fu.TIME_UNDEFINED] = ldrFilename
-							
-							-- Re-enable the file browser dialog
-							app:SetPrefs('Global.UserInterface.AutoClipBrowse', AutoClipBrowse)
 						end
 
 						local x, y = flow:GetPos(ldr)
@@ -419,36 +484,75 @@ function Main()
 						table.insert(imgTbl, ldr)
 					end
 
-					-- Connect the Loader nodes to a MultiMerge node
-					local mmrg = comp:AddTool("MultiMerge", -32768, -32768)
-	
-					-- Shift the node to the right
-					local mrg_x, mrg_y = flow:GetPos(mmrg)
-					if direction == 0 then
-						-- vertical build
-						flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
+					-- What output node should be used?
+					if addOutput == 0 then
+						-- Add a LifeSaver node
+						
+						-- Connect the TVPaintLinkImage nodes to a LifeSaver node
+						local ls = comp:AddTool("Fuse.LifeSaver", -32768, -32768)
+		
+						-- Shift the node to the right
+						local ls_x, ls_y = flow:GetPos(ls)
+							if direction == 0 then
+								-- vertical build
+								flow:SetPos(ls, origin_x + 2, origin_y + 1)
+							else
+								-- horizontal build
+								flow:SetPos(ls, origin_x + 2, origin_y + 1)
+							end
+		
+						-- Name the EXR
+						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
+						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseEXRFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
+		
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							-- Use the actual TVPaint layer name
+							ls["Name" .. (k)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+		
+							-- Connect the image Input
+							ls:ConnectInput("Input" .. (k), imgTbl[k])
+		
+							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
+							
+							-- Add a new image input to the node
+							if k <= #imgTbl - 1 then
+								ls.AddOutput[fu.TIME_UNDEFINED] = 1
+							end
+						end
 					else
-						-- horizontal build
-						flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
-					end
-	
-					-- Connect the inputs
-					for k,v in pairs(imgTbl) do
-						if k == 1 then
-							-- Connect the Background Input
-							mmrg:ConnectInput("Background", imgTbl[k])
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
+						-- Add a MultiMerge node
+						-- Connect the Loader nodes to a MultiMerge node
+						local mmrg = comp:AddTool("MultiMerge", -32768, -32768)
+		
+						-- Shift the node to the right
+						local mrg_x, mrg_y = flow:GetPos(mmrg)
+						if direction == 0 then
+							-- vertical build
+							flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
 						else
-							-- Connect the "Layer#.Foreground" Inputs
-							mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
-							if autoNameLayers == true then
-								-- mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgTbl[k].Name
-								mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+							-- horizontal build
+							flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
+						end
+		
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							if k == 1 then
+								-- Connect the Background Input
+								mmrg:ConnectInput("Background", imgTbl[k])
+								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
+							else
+								-- Connect the "Layer#.Foreground" Inputs
+								mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
+								if autoNameLayers == true then
+									-- mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgTbl[k].Name
+									mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+								end
+								if alphaGain == true then
+									mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
+								end
+								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 							end
-							if alphaGain == true then
-								mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
-							end
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 						end
 					end
 				else
@@ -514,39 +618,81 @@ function Main()
 						table.insert(imgTbl, img)
 					end
 	
-					-- Connect the TVPaintLinkImage nodes to a MultiMerge node
-					local mmrg = comp:AddTool("MultiMerge", -32768, -32768)
-	
-					-- Shift the node to the right
-					local mrg_x, mrg_y = flow:GetPos(mmrg)
-						if direction == 0 then
-							-- vertical build
-							flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
-						else
-							-- horizontal build
-							flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+					-- What output node should be used?
+					if addOutput == 0 then
+						-- Add a LifeSaver node
+
+						-- Connect the TVPaintLinkImage nodes to a LifeSaver node
+						local ls = comp:AddTool("Fuse.LifeSaver", -32768, -32768)
+		
+						-- Shift the node to the right
+						local ls_x, ls_y = flow:GetPos(ls)
+							if direction == 0 then
+								-- vertical build
+								flow:SetPos(ls, origin_x + 2, origin_y + 1)
+							else
+								-- horizontal build
+								flow:SetPos(ls, origin_x + 2, origin_y + 1)
+							end
+		
+						-- Name the EXR
+						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
+						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseEXRFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
+		
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							-- Use the actual TVPaint layer name
+							ls["Name" .. (k)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+		
+							-- Connect the image Input
+							ls:ConnectInput("Input" .. (k), imgTbl[k])
+		
+							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
+							
+							-- Add a new image input to the node
+							if k <= #imgTbl - 1 then
+								ls.AddOutput[fu.TIME_UNDEFINED] = 1
+							end
 						end
-	
-					-- Connect the inputs
-					for k,v in pairs(imgTbl) do
-						if k == 1 then
-							-- Connect the Background Input
-							mmrg:ConnectInput("Background", imgTbl[k])
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
-						else
-							-- Connect the "Layer#.Foreground" Inputs
-							mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
-							if autoNameLayers == true then
-								mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgTbl[k].Name
-								-- mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+					else
+						-- Add a MultiMerge node
+						-- Connect the TVPaintLinkImage nodes to a MultiMerge node
+						local mmrg = comp:AddTool("MultiMerge", -32768, -32768)
+		
+						-- Shift the node to the right
+						local mrg_x, mrg_y = flow:GetPos(mmrg)
+							if direction == 0 then
+								-- vertical build
+								flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+							else
+								-- horizontal build
+								flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
 							end
-							if alphaGain == true then
-								mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
+		
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							if k == 1 then
+								-- Connect the Background Input
+								mmrg:ConnectInput("Background", imgTbl[k])
+								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
+							else
+								-- Connect the "Layer#.Foreground" Inputs
+								mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
+								if autoNameLayers == true then
+									mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgTbl[k].Name
+									-- mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+								end
+								if alphaGain == true then
+									mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
+								end
+								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 							end
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 						end
 					end
 				end
+
+				-- Re-enable the file browser dialog
+				app:SetPrefs('Global.UserInterface.AutoClipBrowse', AutoClipBrowse)
 
 				-- Unlock the comp flow area
 				comp:Unlock()
