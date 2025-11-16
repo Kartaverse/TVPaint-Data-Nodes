@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-16 01.36 AM
+TVPaint Build Comp - v1 2025-11-16 02.10 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -16,12 +16,11 @@ The "alphaGain" control can be used to enable alpha compositing for each layer i
 
 The "reverseLayerOrder" control allows you to flip the layer sort order when the TVPaintLinkImage nodes are added to the comp, and they are then connected to the MultiMerge node.
 
-
 The "skipShowingUI" control allows you to avoid displaying the UI Manager window. This improves compatibility of the script with Resolve Free v19.1-20.2+.
 
 --]]--
 
-adjustRenderRange = false
+adjustRenderRange = true
 
 -- TVPaintLinkImage Options
 baseImageFolder = "Comp:/"
@@ -33,6 +32,12 @@ alphaGain = false
 
 -- Should the UI Manager window be skipped
 skipShowingUI = false
+
+-- Should the nodes be built horizontal or vertical
+direction = 1
+
+-- Debugging log detail
+local verbose = true
 
 function get(t, key)
 	local value = nil
@@ -111,9 +116,7 @@ function setPreferenceData(pref, value, debugPrint)
 end
 
 function AskForInput()
-	-- Debugging log detail
-	local verbose = true
-
+	direction = getPreferenceData("TVPaint.Direction", 1, verbose)
 	adjustRenderRange = getPreferenceData("TVPaint.adjustRenderRange", adjustRenderRange, verbose)
 	autoNameLayers = getPreferenceData("TVPaint.autoNameLayers", autoNameLayers, verbose)
 	alphaGain = getPreferenceData("TVPaint.alphaGain", alphaGain, verbose)
@@ -121,7 +124,7 @@ function AskForInput()
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,155
+	local width,height = 300,182
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -132,7 +135,17 @@ function AskForInput()
 
 		ui:VGroup{
 			ID = "root",
-
+			ui:HGroup{
+				Weight = 0.01,
+				ui:Label{
+					ID = "BuildDirectionLabel",
+					Text = "Build Direction",
+				},
+				ui:ComboBox{
+					ID = "BuildDirection",
+					Text = "Build Direction",
+				},
+			},
 			ui:CheckBox{
 				ID = "AdjustRenderRange",
 				Text = "Adjust Render Range",
@@ -169,6 +182,12 @@ function AskForInput()
 	-- Add your GUI element based event functions here:
 	itm = win:GetItems()
 
+	-- Add the items to the ComboBox menu
+	itm.BuildDirection:AddItem("Vertical")
+	itm.BuildDirection:AddItem("Horizontal")
+	-- Restore the BuildDirection preference
+	itm.BuildDirection.CurrentIndex = direction
+
 	-- The app:AddConfig() command that will capture the "Control + W" or "Control + F4" hotkeys so they will close the window instead of closing the foreground composite.
 	app:AddConfig("TVPaint", {
 		Target {
@@ -186,11 +205,13 @@ function AskForInput()
 	})
 
 	function win.On.OKButton.Clicked(ev)
+		direction = itm.BuildDirection.CurrentIndex
 		adjustRenderRange = itm.AdjustRenderRange.Checked
 		autoNameLayers = itm.AutoNameLayers.Checked
 		alphaGain = itm.AlphaGain.Checked
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 
+		setPreferenceData("TVPaint.Direction", itm.BuildDirection.Checked, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
 		setPreferenceData("TVPaint.autoNameLayers", itm.AutoNameLayers.Checked, verbose)
 		setPreferenceData("TVPaint.alphaGain", itm.AlphaGain.Checked, verbose)
@@ -207,7 +228,7 @@ end
 
 function Main()
 	print("[TVPaint] Build Comp Script")
-	
+
 	-- Read the node selection
 	local selectedTool = comp.ActiveTool
 	if selectedTool then
@@ -225,6 +246,7 @@ function Main()
 			print("[Alpha Gain Zero] ", alphaGain)
 			print("[Reverse Layer Order] ", reverseLayerOrder)
 			print("[Adjust Render Range] ", adjustRenderRange)
+			print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
 
 			-- Starting node position
 			local flow = comp.CurrentFrame.FlowView
@@ -302,7 +324,13 @@ function Main()
 					end
 
 					local x, y = flow:GetPos(img)
-					flow:SetPos(img, origin_x + 1, y)
+					if direction == 0 then
+						-- vertical build
+						flow:SetPos(img, origin_x + 1, y)
+					else
+						-- horizontal build
+						flow:SetPos(img, origin_x, y + 1)
+					end
 
 					-- Save the TVPaintLinkImage node to a table
 					table.insert(imgTbl, img)
@@ -313,7 +341,15 @@ function Main()
 
 				-- Shift the node to the right
 				local mrg_x, mrg_y = flow:GetPos(mmrg)
-				flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+				
+
+					if direction == 0 then
+						-- vertical build
+						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+					else
+						-- horizontal build
+						flow:SetPos(mmrg, origin_x + 1, origin_y + 2)
+					end
 
 				-- Connect the inputs
 				for k,v in pairs(imgTbl) do
@@ -333,10 +369,10 @@ function Main()
 						print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 					end
 				end
-	
+
 				-- Unlock the comp flow area
 				comp:Unlock()
-	
+
 				-- End Undo
 				comp:EndUndo()
 			end
