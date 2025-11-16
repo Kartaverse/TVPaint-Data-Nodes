@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-16 04.35 PM
+TVPaint Build Comp - v1 2025-11-16 07.33 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -7,7 +7,7 @@ Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
 The "addNode" control allows you to choose if you want to insert a Loader or TVPaintLayer node.
 
-The "addOutput" control allows you to choose if you want to insert a MultiMerge or LifeSaver node.
+The "mergeLoaders" control allows you to choose if you want to insert a MultiMerge or LifeSaver node.
 
 The "missingFrames" control defines how should missing frames be handled with Loader nodes
 
@@ -16,6 +16,8 @@ The "baseImageFolder" control defines where the image layer folders are in relat
 The "adjustRenderRange" control sets the RenderEnd range to match the TVPaint image count.
 
 The "autoNameLayers" control is used to name each layer in the MultiMerge node
+
+The "showTiles" control is used if source tiles enabled in the flow
 
 The "alphaGain" control can be used to enable alpha compositing for each layer in the MultiMerge node
 
@@ -47,11 +49,17 @@ direction = 1
 -- Should the a Loader or TVPaint Layer node be used
 addNode = 1
 
--- Should the LifeSaver or MultiMerge  node be used
-addOutput = 1
+-- Are source tiles enabled in the flow
+showTiles = false
+
+-- Should a LifeSaver or MultiMerge node be used
+mergeLoaders = 1
 
 -- How should missing frames be handled with Loader nodes
 missingFrames = 1
+
+-- The cancel button was pressed
+cancelScript = false
 
 -- Debugging log detail
 local verbose = true
@@ -177,16 +185,17 @@ end
 function AskForInput()
 	direction = getPreferenceData("TVPaint.direction", 1, verbose)
 	addNode = getPreferenceData("TVPaint.addNode", 1, verbose)
-	addOutput = getPreferenceData("TVPaint.addOutput", 1, verbose)
+	mergeLoaders = getPreferenceData("TVPaint.mergeLoaders", 1, verbose)
 	adjustRenderRange = getPreferenceData("TVPaint.adjustRenderRange", adjustRenderRange, verbose)
 	addBackground = getPreferenceData("TVPaint.addBackground", addBackground, verbose)
 	autoNameLayers = getPreferenceData("TVPaint.autoNameLayers", autoNameLayers, verbose)
 	alphaGain = getPreferenceData("TVPaint.alphaGain", alphaGain, verbose)
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
+	showTiles = getPreferenceData("TVPaint.showTiles", showTiles, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,285
+	local width,height = 300,310
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -222,11 +231,11 @@ function AskForInput()
 			ui:HGroup{
 				Weight = 0.01,
 				ui:Label{
-					ID = "AddOutputLabel",
+					ID = "MergeLoadersLabel",
 					Text = "Add Output Node",
 				},
 				ui:ComboBox{
-					ID = "AddOutput",
+					ID = "MergeLoaders",
 					Text = "Add Output Node",
 				},
 			},
@@ -266,16 +275,30 @@ function AskForInput()
 				Text = "Reverse Layer Order",
 				Checked = reverseLayerOrder,
 			},
-			ui:Button{
+			ui:CheckBox{
+				ID = "ShowTiles",
+				Text = "Source Tiles Enabled",
+				Checked = showTiles,
+			},
+			ui:HGroup{
 				Weight = 0.01,
-				ID = "OKButton",
-				Text = "OK",
+				ui:Button{
+					Weight = 0.01,
+					ID = "OKButton",
+					Text = "Run",
+				},
+				ui:Button{
+					Weight = 0.01,
+					ID = "CancelButton",
+					Text = "Cancel",
+				},
 			},
 		},
 	})
 
 	-- The window was closed
 	function win.On.TVPaint.Close(ev)
+		cancelScript = true
 		disp:ExitLoop()
 	end
 
@@ -289,16 +312,17 @@ function AskForInput()
 	itm.BuildDirection.CurrentIndex = direction
 	
 	-- Add the items to the ComboBox menu
-	itm.AddNode:AddItem("Loader")
-	itm.AddNode:AddItem("TVPaint Layer")
+	itm.AddNode:AddItem("Using Loader")
+	itm.AddNode:AddItem("Using TVPaintLayer")
 	-- Restore the AddNode preference
 	itm.AddNode.CurrentIndex = addNode
 
 	-- Add the items to the ComboBox menu
-	itm.AddOutput:AddItem("LifeSaver")
-	itm.AddOutput:AddItem("MultiMerge")
+	itm.MergeLoaders:AddItem("Using LifeSaver")
+	itm.MergeLoaders:AddItem("Using MultiMerge")
+	itm.MergeLoaders:AddItem("Using Swizzler")
 	-- Restore the AddNode preference
-	itm.AddOutput.CurrentIndex = addOutput
+	itm.MergeLoaders.CurrentIndex = mergeLoaders
 
 	-- Add the items to the ComboBox menu
 	itm.MissingFrames:AddItem("Fail")
@@ -324,26 +348,33 @@ function AskForInput()
 		},
 	})
 
+	function win.On.CancelButton.Clicked(ev)
+		cancelScript = true
+		disp:ExitLoop()
+	end
+
 	function win.On.OKButton.Clicked(ev)
 		direction = itm.BuildDirection.CurrentIndex
 		addNode = itm.AddNode.CurrentIndex
-		addOutput = itm.AddOutput.CurrentIndex
+		mergeLoaders = itm.MergeLoaders.CurrentIndex
 		missingFrames = itm.MissingFrames.CurrentIndex
 		adjustRenderRange = itm.AdjustRenderRange.Checked
 		addBackground = itm.AddBackground.Checked
 		autoNameLayers = itm.AutoNameLayers.Checked
 		alphaGain = itm.AlphaGain.Checked
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
+		showTiles = itm.ShowTiles.Checked
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.addNode", itm.AddNode.CurrentIndex, verbose)
-		setPreferenceData("TVPaint.addOutput", itm.AddOutput.CurrentIndex, verbose)
+		setPreferenceData("TVPaint.mergeLoaders", itm.MergeLoaders.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.missingFrames", itm.MissingFrames.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
 		setPreferenceData("TVPaint.addBackground", itm.AddBackground.Checked, verbose)
 		setPreferenceData("TVPaint.autoNameLayers", itm.AutoNameLayers.Checked, verbose)
 		setPreferenceData("TVPaint.alphaGain", itm.AlphaGain.Checked, verbose)
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)
+		setPreferenceData("TVPaint.showTiles", itm.ShowTiles.Checked, verbose)
 
 		disp:ExitLoop()
 	end
@@ -367,11 +398,16 @@ function Main()
 
 			if skipShowingUI == false then
 				AskForInput()
+				
+				-- Stop running the script
+				if cancelScript == true then
+					return
+				end
 			end
 
 			print("[Base Image Folder] ", baseImageFolder)
 			print("[Auto Media Node] ", addNode)
-			print("[Auto Output Node] ", addOutput)
+			print("[Auto Output Node] ", mergeLoaders)
 			print("[Auto Name Layers] ", autoNameLayers)
 			print("[Alpha Gain Zero] ", alphaGain)
 			print("[Add Background] ", addBackground)
@@ -435,6 +471,12 @@ function Main()
 					startLayer = 1
 					endLayer = layer_max
 					stepBy = 1
+				end
+
+				-- Source Tiles
+				local offsetY = 1
+				if showTiles == true then
+					offsetY = 3
 				end
 
 				if addNode == 0 then
@@ -510,10 +552,10 @@ function Main()
 						local x, y = flow:GetPos(ldr)
 						if direction == 0 then
 							-- vertical build
-							flow:SetPos(ldr, origin_x + 2, origin_y + (1 * i))
+							flow:SetPos(ldr, origin_x + 2, origin_y + (offsetY * i))
 						else
 							-- horizontal build
-							flow:SetPos(ldr, origin_x + 2, origin_y + (1 * i))
+							flow:SetPos(ldr, origin_x + 2, origin_y + (offsetY * i))
 						end
 	
 						-- Save the Loader node to a table
@@ -521,22 +563,12 @@ function Main()
 					end
 
 					-- What output node should be used?
-					if addOutput == 0 then
+					if mergeLoaders == 0 then
 						-- Add a LifeSaver node
 						
 						-- Connect the TVPaintLinkImage nodes to a LifeSaver node
-						local ls = comp:AddTool("Fuse.LifeSaver", -32768, -32768)
-		
-						-- Shift the node to the right
-						local ls_x, ls_y = flow:GetPos(ls)
-						if direction == 0 then
-							-- vertical build
-							flow:SetPos(ls, origin_x + 2, origin_y + 1)
-						else
-							-- horizontal build
-							flow:SetPos(ls, origin_x + 2, origin_y + 1)
-						end
-		
+						local ls = comp:AddTool("Fuse.LifeSaver", origin_x + 4, origin_y)
+
 						-- Name the EXR
 						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
 						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseEXRFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
@@ -556,7 +588,7 @@ function Main()
 								ls.AddOutput[fu.TIME_UNDEFINED] = 1
 							end
 						end
-					else
+					elseif mergeLoaders == 1 then
 						-- Add a MultiMerge node
 						-- Connect the Loader nodes to a MultiMerge node
 						local mmrg = comp:AddTool("MultiMerge", -32768, -32768)
@@ -565,10 +597,10 @@ function Main()
 						local mrg_x, mrg_y = flow:GetPos(mmrg)
 						if direction == 0 then
 							-- vertical build
-							flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
+							flow:SetPos(mmrg, origin_x + 3, origin_y + offsetY)
 						else
 							-- horizontal build
-							flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
+							flow:SetPos(mmrg, origin_x + 3, origin_y + offsetY)
 						end
 		
 						-- Connect the inputs
@@ -590,6 +622,28 @@ function Main()
 								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 							end
 						end
+					elseif mergeLoaders == 2 then
+						-- Add a Swizzler node
+						local sz = comp:AddTool("Swizzler", origin_x + 3, origin_y)
+	
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							-- Use the actual node name
+							sz["LayerName" .. (k)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+		
+							-- Connect the image Input
+							sz:ConnectInput("Input" .. (k), imgTbl[k])
+		
+							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(sz.Name)  .. ".Input" .. (k)))
+		
+							-- Select the soruce
+							sz["Layer" .. (k) .. ".RInput"][fu.TIME_UNDEFINED] = k
+		
+							-- Add a new image input to the node
+							if k <= #imgTbl - 1 then
+								sz.AddLayer[fu.TIME_UNDEFINED] = 1
+							end
+						end
 					end
 				else
 					-- TVPaint Layer Node
@@ -606,7 +660,7 @@ function Main()
 							flow:SetPos(bg, origin_x + 1, y)
 						else
 							-- horizontal build
-							flow:SetPos(bg, origin_x + 1, y + 1)
+							flow:SetPos(bg, origin_x + 1, y + offsetY)
 						end
 	
 						-- Save the TVPainTVPaintBackgroundtLinkImage node to a table
@@ -647,7 +701,7 @@ function Main()
 							flow:SetPos(img, origin_x + 1, y)
 						else
 							-- horizontal build
-							flow:SetPos(img, origin_x + 1, y + 1)
+							flow:SetPos(img, origin_x + 1, y + offsetY)
 						end
 	
 						-- Save the TVPaintLinkImage node to a table
@@ -655,7 +709,7 @@ function Main()
 					end
 	
 					-- What output node should be used?
-					if addOutput == 0 then
+					if mergeLoaders == 0 then
 						-- Add a LifeSaver node
 
 						-- Connect the TVPaintLinkImage nodes to a LifeSaver node
@@ -665,10 +719,10 @@ function Main()
 						local ls_x, ls_y = flow:GetPos(ls)
 							if direction == 0 then
 								-- vertical build
-								flow:SetPos(ls, origin_x + 2, origin_y + 1)
+								flow:SetPos(ls, origin_x + 2, origin_y + offsetY)
 							else
 								-- horizontal build
-								flow:SetPos(ls, origin_x + 2, origin_y + 1)
+								flow:SetPos(ls, origin_x + 2, origin_y + offsetY)
 							end
 		
 						-- Name the EXR
@@ -699,10 +753,10 @@ function Main()
 						local mrg_x, mrg_y = flow:GetPos(mmrg)
 							if direction == 0 then
 								-- vertical build
-								flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+								flow:SetPos(mmrg, origin_x + 2, origin_y + offsetY)
 							else
 								-- horizontal build
-								flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+								flow:SetPos(mmrg, origin_x + 2, origin_y + offsetY)
 							end
 		
 						-- Connect the inputs
