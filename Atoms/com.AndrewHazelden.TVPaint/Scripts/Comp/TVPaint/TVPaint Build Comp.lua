@@ -351,10 +351,10 @@ function Main()
 						local x, y = flow:GetPos(bg)
 						if direction == 0 then
 							-- vertical build
-							flow:SetPos(bg, origin_x + 1, origin_y)
+							flow:SetPos(bg, origin_x + 2, origin_y)
 						else
 							-- horizontal build
-							flow:SetPos(bg, origin_x + 1, origin_y)
+							flow:SetPos(bg, origin_x + 2, origin_y)
 						end
 
 						-- Set the color
@@ -409,10 +409,10 @@ function Main()
 						local x, y = flow:GetPos(ldr)
 						if direction == 0 then
 							-- vertical build
-							flow:SetPos(ldr, origin_x + 1, origin_y + (1 * i))
+							flow:SetPos(ldr, origin_x + 2, origin_y + (1 * i))
 						else
 							-- horizontal build
-							flow:SetPos(ldr, origin_x + 1, origin_y + (1 * i))
+							flow:SetPos(ldr, origin_x + 2, origin_y + (1 * i))
 						end
 	
 						-- Save the Loader node to a table
@@ -426,10 +426,10 @@ function Main()
 					local mrg_x, mrg_y = flow:GetPos(mmrg)
 					if direction == 0 then
 						-- vertical build
-						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+						flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
 					else
 						-- horizontal build
-						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+						flow:SetPos(mmrg, origin_x + 3, origin_y + 1)
 					end
 	
 					-- Connect the inputs
