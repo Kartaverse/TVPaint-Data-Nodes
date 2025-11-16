@@ -37,6 +37,8 @@ Look in the Fusion "Script/TVPaint" menu to see the automation scripts.
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
+![TVPaint Build Comp Script](Images/script-tvpaint-build-comp.png)
+
 ### Show Fuses Folder
 
 Opens the "TVPaint for Fusion" Fuses folder in a desktop folder browsing window.

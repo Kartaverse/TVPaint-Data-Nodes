@@ -17,6 +17,7 @@ LGPL/GPL v3</p>
 
 ]],
 	Deploy = {
+		"Docs/Kartaverse/TVPaint/Images/script-tvpaint-build-comp.png",
 		"Docs/Kartaverse/TVPaint/README.md",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraFPS.fuse",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraPixelAspectRatio.fuse",
