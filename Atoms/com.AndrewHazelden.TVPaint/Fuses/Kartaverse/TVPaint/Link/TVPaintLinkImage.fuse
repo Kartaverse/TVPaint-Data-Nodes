@@ -290,7 +290,7 @@ function Process(req)
 		out = clip:GetFrame(frame)
 		clip:Close()
 
-		print('[Image] [Filename]', clip.Filename, '[Frame]', frame)
+		-- print('[Image] [Filename]', clip.Filename, '[Frame]', frame)
 
 		-- Push the result to the node's output connection
 		OutData:Set(req, out)
