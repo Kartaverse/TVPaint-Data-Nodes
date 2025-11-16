@@ -291,6 +291,28 @@ function Process(req)
 		clip:Close()
 
 		-- print('[Image] [Filename]', clip.Filename, '[Frame]', frame)
+		
+		-- Fallback
+		if not out then
+			-- Image Size
+			local width = 0
+			local height = 0
+		
+			-- Extract the camera resolution
+			if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table"  then
+				width = tbl.project.camera.width
+				height = tbl.project.camera.height
+			end
+		
+			emptyImage = Image({
+				IMG_Width = width,
+				IMG_Height = height,
+			})
+		
+			-- Pixel defaults to black/clear
+			emptyImage:Fill(Pixel())
+			out = emptyImage
+		end
 
 		-- Push the result to the node's output connection
 		OutData:Set(req, out)
@@ -306,8 +328,8 @@ function Process(req)
 		end
 	
 		emptyImage = Image({
-			IMG_Width = compWidth,
-			IMG_Height = compHeight,
+			IMG_Width = width,
+			IMG_Height = height,
 		})
 	
 		-- Pixel defaults to black/clear
