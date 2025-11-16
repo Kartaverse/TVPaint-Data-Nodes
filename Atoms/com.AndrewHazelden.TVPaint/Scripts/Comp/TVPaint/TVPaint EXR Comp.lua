@@ -1,17 +1,15 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-16 03.17 AM
+TVPaint EXR Comp - v1 2025-11-16 01.54 PM
 
-Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
+Auto-build an EXR comp node-graph based upon the active TVPaintLoader node selection.
 
 ## Controls:
+
+The "baseEXRFolder" control defines the folder where the LifeSaver content is rendered to.
 
 The "baseImageFolder" control defines where the image layer folders are in relation to the active composite. This setting fills in the value used by the TVPaintLinkImage node.
 
 The "adjustRenderRange" control sets the RenderEnd range to match the TVPaint image count.
-
-The "autoNameLayers" control is used to name each layer in the MultiMerge node
-
-The "alphaGain" control can be used to enable alpha compositing for each layer in the MultiMerge node
 
 The "reverseLayerOrder" control allows you to flip the layer sort order when the TVPaintLinkImage nodes are added to the comp, and they are then connected to the MultiMerge node.
 
@@ -19,15 +17,15 @@ The "skipShowingUI" control allows you to avoid displaying the UI Manager window
 
 --]]--
 
+-- Should the timeline frame range match the TVPaint range
 adjustRenderRange = true
+
+-- LifeSaver
+baseEXRFolder = "Comp:/exr/"
 
 -- TVPaintLinkImage Options
 baseImageFolder = "Comp:/"
 reverseLayerOrder = false
-
--- MultiMerge Options
-autoNameLayers = true
-alphaGain = false
 
 -- Should a TVPaintBackground node be added
 addBackground = false
@@ -117,22 +115,65 @@ function setPreferenceData(pref, value, debugPrint)
 	end
 end
 
+
+------------------------------------------------------------------------------
+-- parseFilename() from bmd.scriptlib
+--
+-- this is a great function for ripping a filepath into little bits
+-- returns a table with the following
+--
+-- FullPath : The raw, original path sent to the function
+-- Path : The path, without filename
+-- FullName : The name of the clip w\ extension
+-- Name : The name without extension
+-- CleanName: The name of the clip, without extension or sequence
+-- SNum : The original sequence string, or "" if no sequence
+-- Number : The sequence as a numeric value, or nil if no sequence
+-- Extension: The raw extension of the clip
+-- Padding : Amount of padding in the sequence, or nil if no sequence
+-- UNC : A true or false value indicating whether the path is a UNC path or not
+------------------------------------------------------------------------------
+function parseFilename(filename)
+	local seq = {}
+	seq.FullPath = filename
+	string.gsub(seq.FullPath, "^(.+[/\\])(.+)", function(path, name) seq.Path = path seq.FullName = name end)
+	string.gsub(seq.FullName, "^(.+)(%..+)$", function(name, ext) seq.Name = name seq.Extension = ext end)
+
+	if not seq.Name then -- no extension?
+		seq.Name = seq.FullName
+	end
+
+	string.gsub(seq.Name, "^(.-)(%d+)$", function(name, SNum) seq.CleanName = name seq.SNum = SNum end)
+
+	if seq.SNum then
+		seq.Number = tonumber( seq.SNum )
+		seq.Padding = string.len( seq.SNum )
+	else
+		seq.SNum = ""
+		seq.CleanName = seq.Name
+	end
+
+	if seq.Extension == nil then seq.Extension = "" end
+	seq.UNC = ( string.sub(seq.Path, 1, 2) == [[\\]] )
+
+	return seq
+end
+
+
 function AskForInput()
 	direction = getPreferenceData("TVPaint.Direction", 1, verbose)
 	adjustRenderRange = getPreferenceData("TVPaint.adjustRenderRange", adjustRenderRange, verbose)
 	addBackground = getPreferenceData("TVPaint.addBackground", addBackground, verbose)
-	autoNameLayers = getPreferenceData("TVPaint.autoNameLayers", autoNameLayers, verbose)
-	alphaGain = getPreferenceData("TVPaint.alphaGain", alphaGain, verbose)
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,210
+	local width,height = 300,150
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
 		TargetID = "TVPaint",
-		WindowTitle = "TVPaint Build Comp",
+		WindowTitle = "TVPaint EXR Comp",
 		Geometry = {100, 100, width, height},
 		Spacing = 10,
 
@@ -153,16 +194,6 @@ function AskForInput()
 				ID = "AdjustRenderRange",
 				Text = "Adjust Render Range",
 				Checked = adjustRenderRange,
-			},
-			ui:CheckBox{
-				ID = "AutoNameLayers",
-				Text = "Auto Name Layers",
-				Checked = autoNameLayers,
-			},
-			ui:CheckBox{
-				ID = "AlphaGain",
-				Text = "Alpha Gain Zero",
-				Checked = alphaGain,
 			},
 			ui:CheckBox{
 				ID = "AddBackground",
@@ -216,15 +247,11 @@ function AskForInput()
 		direction = itm.BuildDirection.CurrentIndex
 		adjustRenderRange = itm.AdjustRenderRange.Checked
 		addBackground = itm.AddBackground.Checked
-		autoNameLayers = itm.AutoNameLayers.Checked
-		alphaGain = itm.AlphaGain.Checked
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 
 		setPreferenceData("TVPaint.Direction", itm.BuildDirection.Checked, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
 		setPreferenceData("TVPaint.addBackground", itm.AddBackground.Checked, verbose)
-		setPreferenceData("TVPaint.autoNameLayers", itm.AutoNameLayers.Checked, verbose)
-		setPreferenceData("TVPaint.alphaGain", itm.AlphaGain.Checked, verbose)
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)
 
 		disp:ExitLoop()
@@ -252,8 +279,6 @@ function Main()
 			end
 
 			print("[Base Image Folder] ", baseImageFolder)
-			print("[Auto Name Layers] ", autoNameLayers)
-			print("[Alpha Gain Zero] ", alphaGain)
 			print("[Add Background] ", addBackground)
 			print("[Reverse Layer Order] ", reverseLayerOrder)
 			print("[Adjust Render Range] ", adjustRenderRange)
@@ -272,6 +297,7 @@ function Main()
 				comp:Lock()
 
 				local imgTbl = {}
+				local imgNameTbl = {}
 
 				local tbl = {}
 				tbl = selectedTool["ScriptVal"][comp.CurrentTime] or {}
@@ -329,6 +355,9 @@ function Main()
 
 					-- Save the TVPainTVPaintBackgroundtLinkImage node to a table
 					table.insert(imgTbl, bg)
+
+					-- Save the layer name
+					table.insert(imgNameTbl, "bg")
 				end
 
 				for i = startLayer, endLayer, stepBy do
@@ -352,6 +381,9 @@ function Main()
 					if type(groupTbl) == "table" and groupTbl.name then
 							local NewName = "layer_" .. tostring(groupTbl.name)
 							img:SetAttrs({TOOLS_Name = NewName})
+
+							-- Save the layer name
+							table.insert(imgNameTbl, groupTbl.name)
 					end
 
 					local x, y = flow:GetPos(img)
@@ -367,35 +399,36 @@ function Main()
 					table.insert(imgTbl, img)
 				end
 
-				-- Connect the TVPaintLinkImage nodes to a MultiMerge node
-				local mmrg = comp:AddTool("MultiMerge", -32768, -32768)
+				-- Connect the TVPaintLinkImage nodes to a LifeSaver node
+				local ls = comp:AddTool("Fuse.LifeSaver", -32768, -32768)
 
 				-- Shift the node to the right
-				local mrg_x, mrg_y = flow:GetPos(mmrg)
+				local ls_x, ls_y = flow:GetPos(ls)
 					if direction == 0 then
 						-- vertical build
-						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+						flow:SetPos(ls, origin_x + 2, origin_y + 1)
 					else
 						-- horizontal build
-						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
+						flow:SetPos(ls, origin_x + 2, origin_y + 1)
 					end
+
+				-- Name the EXR
+				local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
+				ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseEXRFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
 
 				-- Connect the inputs
 				for k,v in pairs(imgTbl) do
-					if k == 1 then
-						-- Connect the Background Input
-						mmrg:ConnectInput("Background", imgTbl[k])
-						print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
-					else
-						-- Connect the "Layer#.Foreground" Inputs
-						mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
-						if autoNameLayers == true then
-							mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgTbl[k].Name
-						end
-						if alphaGain == true then
-							mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
-						end
-						print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
+					-- Use the actual TVPaint layer name
+					ls["Name" .. (k)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+
+					-- Connect the image Input
+					ls:ConnectInput("Input" .. (k), imgTbl[k])
+
+					print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
+					
+					-- Add a new image input to the node
+					if k <= #imgTbl - 1 then
+						ls.AddOutput[fu.TIME_UNDEFINED] = 1
 					end
 				end
 

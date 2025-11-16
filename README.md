@@ -29,7 +29,31 @@ To run TVPaint based workflows on your Resolve/Fusion system you will need the f
 
 4. Quit and relaunch Resolve/Fusion once for the fuse nodes to load.
 
-# TVPaint Node Categories
+## TVPaint Scripts
+
+Look in the Fusion "Script/TVPaint" menu to see the automation scripts.
+
+### TVPaint Build Comp
+
+Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
+
+### TVPaint EXR Comp
+
+Auto-build an EXR comp node-graph based upon the active TVPaintLoader node selection.
+
+### Show Fuses Folder
+
+Opens the "TVPaint for Fusion" Fuses folder in a desktop folder browsing window.
+
+`Fuses:/Kartaverse/TVPaint/`
+
+### Show Comps Folder
+
+Opens the "TVPaint for Fusion" Comp examples folder in a desktop folder browsing window.
+
+`Reactor:/Deploy/Comps/Kartaverse/TVPaint/`
+
+## TVPaint Node Categories
 
 The TVPaint data nodes are separated into the following categories and sub-categories based upon the function they perform:
 

@@ -41,5 +41,6 @@ LGPL/GPL v3</p>
 		"Scripts/Comp/TVPaint/Open/Show Comps Folder.lua",
 		"Scripts/Comp/TVPaint/Open/Show Fuses Folder.lua",
 		"Scripts/Comp/TVPaint/TVPaint Build Comp.lua",
+		"Scripts/Comp/TVPaint/TVPaint EXR Comp.lua",
 	},
 }
