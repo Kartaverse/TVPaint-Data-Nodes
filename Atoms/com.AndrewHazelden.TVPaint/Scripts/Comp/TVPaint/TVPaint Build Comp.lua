@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-16 02.10 AM
+TVPaint Build Comp - v1 2025-11-16 03.17 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -29,6 +29,9 @@ reverseLayerOrder = false
 -- MultiMerge Options
 autoNameLayers = true
 alphaGain = false
+
+-- Should a TVPaintBackground node be added
+addBackground = false
 
 -- Should the UI Manager window be skipped
 skipShowingUI = false
@@ -118,13 +121,14 @@ end
 function AskForInput()
 	direction = getPreferenceData("TVPaint.Direction", 1, verbose)
 	adjustRenderRange = getPreferenceData("TVPaint.adjustRenderRange", adjustRenderRange, verbose)
+	addBackground = getPreferenceData("TVPaint.addBackground", addBackground, verbose)
 	autoNameLayers = getPreferenceData("TVPaint.autoNameLayers", autoNameLayers, verbose)
 	alphaGain = getPreferenceData("TVPaint.alphaGain", alphaGain, verbose)
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,182
+	local width,height = 300,210
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -160,6 +164,11 @@ function AskForInput()
 				ID = "AlphaGain",
 				Text = "Alpha Gain Zero",
 				Checked = alphaGain,
+			},
+			ui:CheckBox{
+				ID = "AddBackground",
+				Text = "Add Background",
+				Checked = addBackground,
 			},
 			ui:CheckBox{
 				ID = "ReverseLayerOrder",
@@ -207,12 +216,14 @@ function AskForInput()
 	function win.On.OKButton.Clicked(ev)
 		direction = itm.BuildDirection.CurrentIndex
 		adjustRenderRange = itm.AdjustRenderRange.Checked
+		addBackground = itm.AddBackground.Checked
 		autoNameLayers = itm.AutoNameLayers.Checked
 		alphaGain = itm.AlphaGain.Checked
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 
 		setPreferenceData("TVPaint.Direction", itm.BuildDirection.Checked, verbose)
 		setPreferenceData("TVPaint.adjustRenderRange", itm.AdjustRenderRange.Checked, verbose)
+		setPreferenceData("TVPaint.addBackground", itm.AddBackground.Checked, verbose)
 		setPreferenceData("TVPaint.autoNameLayers", itm.AutoNameLayers.Checked, verbose)
 		setPreferenceData("TVPaint.alphaGain", itm.AlphaGain.Checked, verbose)
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)
@@ -244,6 +255,7 @@ function Main()
 			print("[Base Image Folder] ", baseImageFolder)
 			print("[Auto Name Layers] ", autoNameLayers)
 			print("[Alpha Gain Zero] ", alphaGain)
+			print("[Add Background] ", addBackground)
 			print("[Reverse Layer Order] ", reverseLayerOrder)
 			print("[Adjust Render Range] ", adjustRenderRange)
 			print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
@@ -300,8 +312,28 @@ function Main()
 					stepBy = 1
 				end
 
+				-- Add the TVPaintBackground node
+				if addBackground == true then
+					local bg = comp:AddTool("Fuse.TVPaintBackground", -32768, -32768)
+
+					-- Connect the inputs
+					bg:ConnectInput("ScriptVal", selectedTool)
+
+					local x, y = flow:GetPos(bg)
+					if direction == 0 then
+						-- vertical build
+						flow:SetPos(bg, origin_x + 1, y)
+					else
+						-- horizontal build
+						flow:SetPos(bg, origin_x + 1, y + 1)
+					end
+
+					-- Save the TVPainTVPaintBackgroundtLinkImage node to a table
+					table.insert(imgTbl, bg)
+				end
+
 				for i = startLayer, endLayer, stepBy do
-					-- Add the node
+					-- Add the TVPaintLinkImage node
 					local img = comp:AddTool("Fuse.TVPaintLinkImage", -32768, -32768)
 
 					-- Connect the inputs
@@ -329,7 +361,7 @@ function Main()
 						flow:SetPos(img, origin_x + 1, y)
 					else
 						-- horizontal build
-						flow:SetPos(img, origin_x, y + 1)
+						flow:SetPos(img, origin_x + 1, y + 1)
 					end
 
 					-- Save the TVPaintLinkImage node to a table
@@ -341,14 +373,12 @@ function Main()
 
 				-- Shift the node to the right
 				local mrg_x, mrg_y = flow:GetPos(mmrg)
-				
-
 					if direction == 0 then
 						-- vertical build
 						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
 					else
 						-- horizontal build
-						flow:SetPos(mmrg, origin_x + 1, origin_y + 2)
+						flow:SetPos(mmrg, origin_x + 2, origin_y + 1)
 					end
 
 				-- Connect the inputs
