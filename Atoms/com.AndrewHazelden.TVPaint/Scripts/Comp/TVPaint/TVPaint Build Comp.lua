@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 01.59 PM
+TVPaint Build Comp - v1 2025-11-17 02.11 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -791,13 +791,31 @@ function Main()
 					elseif mergeLoaders == 3 then
 						-- Add Merge3D nodes
 						local img3DTbl = {}
-
+						local cam3D
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
 							-- Y axis shift value
 							local kStepBy = 1
 							if addBackground == false then
 								kStepBy = 1
+							end
+
+							-- Add a Camera3D node
+							if k == 1 then
+								-- Control Camera3D node
+								if direction == 0 then
+									-- Build vertical
+									cam3D = comp:AddTool("Camera3D", origin_x + 4, origin_y + (offsetY * (k - 1 - kStepBy)))
+								else
+									-- Build horizontal
+									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)), origin_y + 6)
+								end
+
+								-- Move the camera back to fit the ImagePlane3D
+								cam3D["Transform3DOp.Translate.Z"] = 2
+
+								-- Sneak the camera3D node into the list of ImagePlane3D nodes
+								table.insert(img3DTbl, cam3D)
 							end
 
 							local img3D
@@ -821,7 +839,7 @@ function Main()
 						local mrg3D
 						if direction == 0 then
 							-- Build vertical
-							mrg3D = comp:AddTool("Merge3D", origin_x + 6, origin_y)
+							mrg3D = comp:AddTool("Merge3D", origin_x + 7, origin_y)
 						else
 							-- Build horizontal
 							mrg3D = comp:AddTool("Merge3D", origin_x, origin_y + 10)
@@ -836,7 +854,7 @@ function Main()
 						local rnd3D
 						if direction == 0 then
 							-- Build vertical
-							rnd3D = comp:AddTool("Renderer3D", origin_x + 8, origin_y)
+							rnd3D = comp:AddTool("Renderer3D", origin_x + 9, origin_y)
 						else
 							-- Build horizontal
 							rnd3D = comp:AddTool("Renderer3D", origin_x, origin_y + 12)
@@ -847,6 +865,11 @@ function Main()
 
 						-- Enable hardware rendering
 						rnd3D.RendererType = "RendererOpenGL"
+
+						-- Select the camera
+						if cam3D and cam3D.Name then
+							rnd3D.CameraSelector = tostring(cam3D.Name)
+						end
 					elseif mergeLoaders == 4 then
 						-- Add a Swizzler node
 						local sz
@@ -1113,6 +1136,7 @@ function Main()
 						-- Add Merge3D nodes
 						local img3DTbl = {}
 						local tex2DTbl = {}
+						local cam3D
 
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
@@ -1136,6 +1160,24 @@ function Main()
 							tex2D:ConnectInput("Input", imgTbl[k])
 
 							table.insert(tex2DTbl, tex2D)
+
+							-- Add a Camera3D node
+							if k == 1 then
+								-- Control Camera3D node
+								if direction == 0 then
+									-- Build vertical
+									cam3D = comp:AddTool("Camera3D", origin_x + 6, origin_y + (offsetY * (k - 1 - kStepBy)))
+								else
+									-- Build horizontal
+									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)), origin_y + 8)
+								end
+
+								-- Move the camera back to fit the ImagePlane3D
+								cam3D["Transform3DOp.Translate.Z"] = 2
+
+								-- Sneak the camera3D node into the list of ImagePlane3D nodes
+								table.insert(img3DTbl, cam3D)
+							end
 
 							local img3D
 							-- Control ImagePlane3D node
@@ -1184,6 +1226,11 @@ function Main()
 
 						-- Enable hardware rendering
 						rnd3D.RendererType = "RendererOpenGL"
+
+						-- Select the camera
+						if cam3D and cam3D.Name then
+							rnd3D.CameraSelector = tostring(cam3D.Name)
+						end
 					elseif mergeLoaders == 4 then
 						-- Add a Swizzler node
 						local sz
