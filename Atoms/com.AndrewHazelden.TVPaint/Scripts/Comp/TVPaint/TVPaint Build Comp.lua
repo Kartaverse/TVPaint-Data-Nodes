@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 11.56 AM
+TVPaint Build Comp - v1 2025-11-17 12.34 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -28,6 +28,10 @@ The "alphaGain" control can be used to enable alpha compositing for each layer i
 The "reverseLayerOrder" control allows you to flip the layer sort order when the TVPaintLinkImage nodes are added to the comp, and they are then connected to the MultiMerge node.
 
 The "skipShowingUI" control allows you to avoid displaying the UI Manager window. This improves compatibility of the script with Resolve Free v19.1-20.2+.
+
+## Todos
+
+- Merge Loaders option to build out a 3D comp with a Camera3D node, ImagePlane3D node, and Renderer3D output
 
 --]]--
 
@@ -614,11 +618,15 @@ function Main()
 
 						-- Update the Loader node filename
 						local link = groupTbl.link
-						if verbose == true then print("[Clip Link] ", i) end
-						local groupLinkTbl = get(link, i)
-						if type(groupLinkTbl) == "table" and groupLinkTbl.file then
-							local ldrFilename = tostring(baseImageFolder) .. tostring(groupLinkTbl.file)
-							ldr.Clip[fu.TIME_UNDEFINED] = ldrFilename
+						local link_min = 0
+						if #groupTbl.link >= 1 then
+							link_min = 1
+							if verbose == true then print("[Clip Link] ", link_min) end
+							local groupLinkTbl = get(link, link_min)
+							if type(groupLinkTbl) == "table" and groupLinkTbl.file then
+								local ldrFilename = tostring(baseImageFolder) .. tostring(groupLinkTbl.file)
+								ldr.Clip[fu.TIME_UNDEFINED] = ldrFilename
+							end
 						end
 
 						-- Save the Loader node to a table
@@ -873,7 +881,6 @@ function Main()
 								-- Save the layer name
 								table.insert(imgNameTbl, groupTbl.name)
 						end
-
 
 						-- Tile Color
 						if tileColor == true then
