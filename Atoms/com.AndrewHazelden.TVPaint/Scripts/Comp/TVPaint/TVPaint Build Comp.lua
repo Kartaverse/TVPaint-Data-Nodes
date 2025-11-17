@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 12.34 PM
+TVPaint Build Comp - v1 2025-11-17 01.59 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -32,7 +32,8 @@ The "skipShowingUI" control allows you to avoid displaying the UI Manager window
 ## Todos
 
 - Merge Loaders option to build out a 3D comp with a Camera3D node, ImagePlane3D node, and Renderer3D output
-
+- ImagePlane3D size and aspect ratio from clip width/height
+- Camera frustum "fit to image plane" size.
 --]]--
 
 adjustRenderRange = true
@@ -358,6 +359,7 @@ function AskForInput()
 	itm.MergeLoaders:AddItem("Using LifeSaver")
 	itm.MergeLoaders:AddItem("Using MultiMerge")
 	itm.MergeLoaders:AddItem("Using Merge")
+	itm.MergeLoaders:AddItem("Using Merge3D")
 	itm.MergeLoaders:AddItem("Using Swizzler")
 	-- Restore the preference
 	itm.MergeLoaders.CurrentIndex = mergeLoaders
@@ -633,8 +635,8 @@ function Main()
 						table.insert(imgTbl, ldr)
 					end
 
-					-- When adding merge nodes sort the image table
-					if mergeLoaders == 2 then
+					-- When adding Merge or Merge3D nodes sort the image table
+					if mergeLoaders == 2 or mergeLoaders == 3 then
 						if direction == 0 then
 							-- Build vertical
 							-- Sort using the vertical position
@@ -787,6 +789,65 @@ function Main()
 							end
 						end
 					elseif mergeLoaders == 3 then
+						-- Add Merge3D nodes
+						local img3DTbl = {}
+
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							-- Y axis shift value
+							local kStepBy = 1
+							if addBackground == false then
+								kStepBy = 1
+							end
+
+							local img3D
+							-- Control ImagePlane3D node
+							if direction == 0 then
+								-- Build vertical
+								img3D = comp:AddTool("ImagePlane3D", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+							else
+								-- Build horizontal
+								img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
+							end
+
+							-- Connect the inputs
+							img3D:ConnectInput("MaterialInput", imgTbl[k])
+
+							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
+
+							table.insert(img3DTbl, img3D)
+						end
+
+						local mrg3D
+						if direction == 0 then
+							-- Build vertical
+							mrg3D = comp:AddTool("Merge3D", origin_x + 6, origin_y)
+						else
+							-- Build horizontal
+							mrg3D = comp:AddTool("Merge3D", origin_x, origin_y + 10)
+						end
+
+						-- Connect the inputs
+						for k,v in pairs(img3DTbl) do
+							-- Connect the inputs
+							mrg3D:ConnectInput("SceneInput" .. (k), img3DTbl[k])
+						end
+
+						local rnd3D
+						if direction == 0 then
+							-- Build vertical
+							rnd3D = comp:AddTool("Renderer3D", origin_x + 8, origin_y)
+						else
+							-- Build horizontal
+							rnd3D = comp:AddTool("Renderer3D", origin_x, origin_y + 12)
+						end
+
+						-- Connect the inputs
+						rnd3D:ConnectInput("SceneInput", mrg3D)
+
+						-- Enable hardware rendering
+						rnd3D.RendererType = "RendererOpenGL"
+					elseif mergeLoaders == 4 then
 						-- Add a Swizzler node
 						local sz
 						if direction == 0 then
@@ -896,8 +957,8 @@ function Main()
 						table.insert(imgTbl, img)
 					end
 
-					-- When adding merge nodes sort the image table
-					if mergeLoaders == 2 then
+					-- When adding Merge or Merge3D nodes sort the image table
+					if mergeLoaders == 2 or mergeLoaders == 3 then
 						if direction == 0 then
 							-- Build vertical
 							-- Sort using the vertical position
@@ -1049,6 +1110,81 @@ function Main()
 							end
 						end
 					elseif mergeLoaders == 3 then
+						-- Add Merge3D nodes
+						local img3DTbl = {}
+						local tex2DTbl = {}
+
+						-- Connect the inputs
+						for k,v in pairs(imgTbl) do
+							-- Y axis shift value
+							local kStepBy = 1
+							if addBackground == false then
+								kStepBy = 1
+							end
+
+							-- Add a Texture2D to avoid fuse graphics from crashing a 3D surface material node
+							local tex2D
+							if direction == 0 then
+								-- Build vertical
+								tex2D = comp:AddTool("Texture2DOperator", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+							else
+								-- Build horizontal
+								tex2D = comp:AddTool("Texture2DOperator", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
+							end
+
+							-- Connect the inputs
+							tex2D:ConnectInput("Input", imgTbl[k])
+
+							table.insert(tex2DTbl, tex2D)
+
+							local img3D
+							-- Control ImagePlane3D node
+							if direction == 0 then
+								-- Build vertical
+								img3D = comp:AddTool("ImagePlane3D", origin_x + 6, origin_y + (offsetY * (k - kStepBy)))
+							else
+								-- Build horizontal
+								img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 8)
+							end
+
+							-- Connect the inputs
+							img3D:ConnectInput("MaterialInput", tex2DTbl[k])
+
+							print(string.format("[%03d][Connection] %30s -> %30s -> %s", k, tostring(imgTbl[k].Name), tostring(tex2DTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
+
+							table.insert(img3DTbl, img3D)
+						end
+
+						local mrg3D
+						if direction == 0 then
+							-- Build vertical
+							mrg3D = comp:AddTool("Merge3D", origin_x + 8, origin_y)
+						else
+							-- Build horizontal
+							mrg3D = comp:AddTool("Merge3D", origin_x, origin_y + 12)
+						end
+
+						-- Connect the inputs
+						for k,v in pairs(img3DTbl) do
+							-- Connect the inputs
+							mrg3D:ConnectInput("SceneInput" .. (k), img3DTbl[k])
+						end
+
+						local rnd3D
+						if direction == 0 then
+							-- Build vertical
+							rnd3D = comp:AddTool("Renderer3D", origin_x + 10, origin_y)
+						else
+							-- Build horizontal
+							rnd3D = comp:AddTool("Renderer3D", origin_x, origin_y + 14)
+						end
+
+						-- Connect the inputs
+						rnd3D:ConnectInput("SceneInput", mrg3D)
+
+						-- Enable hardware rendering
+						rnd3D.RendererType = "RendererOpenGL"
+					elseif mergeLoaders == 4 then
 						-- Add a Swizzler node
 						local sz
 						if direction == 0 then
