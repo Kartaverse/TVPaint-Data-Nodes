@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 03.56 PM
+TVPaint Build Comp - v1 2025-11-17 06.28 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -31,9 +31,17 @@ The "skipShowingUI" control allows you to avoid displaying the UI Manager window
 
 ## Todos
 
-- Merge Loaders option to build out a 3D comp with a Camera3D node, ImagePlane3D node, and Renderer3D output
+3D
+- Fix Merge3D layer ordering
 - ImagePlane3D size and aspect ratio from clip width/height
 - Camera frustum "fit to image plane" size.
+
+Loader node
+- Take folder prefix from JSON filepath
+
+- Camera Material Input - Depth Offset per layer
+
+
 --]]--
 
 adjustRenderRange = true
@@ -60,10 +68,13 @@ skipShowingUI = false
 direction = 1
 
 -- Should the a Loader or TVPaint Layer node be used
-addNode = 1
+addNode = 0
 
 -- Should textures be projected through cameras
 textureProjection = 0
+
+-- Should the 2D textures be merged before going into the 3D space
+texturePreComps = 0
 
 -- Are source tiles enabled in the flow
 showTiles = false
@@ -214,11 +225,12 @@ function AskForInput()
 	showTiles = getPreferenceData("TVPaint.showTiles", showTiles, verbose)
 	tileColor = getPreferenceData("TVPaint.tileColor", tileColor, verbose)
 	textureProjection = getPreferenceData("TVPaint.TextureProjection", textureProjection, verbose)
+	texturePreComps = getPreferenceData("TVPaint.TexturePreComps", texturePreComps, verbose)
 	verbose = getPreferenceData("TVPaint.verbose", verbose, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,280
+	local width,height = 300,310
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -270,7 +282,18 @@ function AskForInput()
 				},
 				ui:ComboBox{
 					ID = "TextureProjection",
-					Text = "Camera3D Texture Projection",
+					Text = "Texture Projection",
+				},
+			},
+			ui:HGroup{
+				Weight = 0.01,
+				ui:Label{
+					ID = "TexturePreCompsLabel",
+					Text = "Texture PreComps",
+				},
+				ui:ComboBox{
+					ID = "TexturePreComps",
+					Text = "Texture PreComps",
 				},
 			},
 			ui:HGroup{
@@ -384,6 +407,13 @@ function AskForInput()
 	itm.TextureProjection:AddItem("ImagePlane3D")
 	-- Restore the preference
 	itm.TextureProjection.CurrentIndex = textureProjection
+	
+	-- Add the items to the ComboBox menu
+	itm.TexturePreComps:AddItem("Skip")
+	itm.TexturePreComps:AddItem("MultiMerge")
+	itm.TexturePreComps:AddItem("Merge")
+	-- Restore the preference
+	itm.TexturePreComps.CurrentIndex = texturePreComps
 
 	-- Add the items to the ComboBox menu
 	itm.MissingFrames:AddItem("Fail")
@@ -427,6 +457,7 @@ function AskForInput()
 		showTiles = itm.ShowTiles.Checked
 		tileColor = itm.TileColor.Checked
 		textureProjection = itm.TextureProjection.CurrentIndex
+		texturePreComps = itm.TexturePreComps.CurrentIndex
 		verbose = itm.Verbose.Checked
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
@@ -441,6 +472,7 @@ function AskForInput()
 		setPreferenceData("TVPaint.showTiles", itm.ShowTiles.Checked, verbose)
 		setPreferenceData("TVPaint.tileColor", itm.TileColor.Checked, verbose)
 		setPreferenceData("TVPaint.textureProjection", itm.TextureProjection.CurrentIndex, verbose)
+		setPreferenceData("TVPaint.texturePreComps", itm.TexturePreComps.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.verbose", itm.Verbose.Checked, verbose)
 
 		disp:ExitLoop()
@@ -485,6 +517,7 @@ function Main()
 				print("[Missing Frames] ", missingFrames)
 				print("[Tile Color] ", tileColor)
 				print("[Texture Projection] ", textureProjection)
+				print("[Texture Pre-Comps] ", texturePreComps)
 			end
 
 			-- Starting node position
@@ -698,7 +731,7 @@ function Main()
 							-- Connect the image Input
 							ls:ConnectInput("Input" .. (k), imgTbl[k])
 
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
+							print(string.format("[%03d][LifeSaver Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
 
 							-- Add a new image input to the node
 							if k <= #imgTbl - 1 then
@@ -722,7 +755,7 @@ function Main()
 							if k == 1 then
 								-- Connect the Background Input
 								mmrg:ConnectInput("Background", imgTbl[k])
-								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
+								print(string.format("[%03d][MultiMerge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
 							else
 								-- Connect the "Layer#.Foreground" Inputs
 								mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
@@ -733,7 +766,7 @@ function Main()
 								if alphaGain == true then
 									mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
 								end
-								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
+								print(string.format("[%03d][MultiMerge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 							end
 						end
 					elseif mergeLoaders == 2 then
@@ -807,7 +840,7 @@ function Main()
 									mrg["Gain"][fu.TIME_UNDEFINED] = 0
 								end
 
-								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mrg.Name)  .. ".Input" .. (k)))
+								print(string.format("[%03d][Merge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mrg.Name)  .. ".Input" .. (k)))
 
 								table.insert(mrgTbl, mrg)
 							end
@@ -815,24 +848,138 @@ function Main()
 					elseif mergeLoaders == 3 then
 						-- Add Merge3D nodes
 						local img3DTbl = {}
+						local mrgTbl = {}
 						local cam3D
+						local mmrg
+
+						-- Shift the nodes to compensate for the 2D texture precomp nodes
+						local preCompOffset = 0
+
+						-- Y axis shift value
+						local kStepBy = 1
+						if addBackground == false then
+							kStepBy = 1
+						end
+
+						if texturePreComps == 0 then
+							-- Skip
+						elseif texturePreComps == 1 then
+							-- MultiMerge
+							preCompOffset = 4
+
+							-- Add a MultiMerge node
+							-- Connect the Loader nodes to a MultiMerge node
+							if direction == 0 then
+								-- Build vertical
+								mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y + offsetY)
+							else
+								-- Build horizontal
+								mmrg = comp:AddTool("MultiMerge", origin_x + offsetX, origin_y + 5)
+							end
+	
+							-- Connect the inputs
+							for k, v in pairs(imgTbl) do
+								if k == 1 then
+									-- Connect the Background Input
+									mmrg:ConnectInput("Background", imgTbl[k])
+									print(string.format("[%03d][MultiMerge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
+								else
+									-- Connect the "Layer#.Foreground" Inputs
+									mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
+									if autoNameLayers == true then
+										-- mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgTbl[k].Name
+										mmrg["LayerName" .. (k-1)][fu.TIME_UNDEFINED] = imgNameTbl[k]
+									end
+									if alphaGain == true then
+										mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
+									end
+									print(string.format("[%03d][MultiMerge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
+								end
+							end
+						elseif texturePreComps == 2 then
+							-- Merge
+							preCompOffset = 4
+
+							-- Add a Merge2D node
+							-- Connect the inputs
+							for key, value in pairs(imgTbl) do
+								local mrg
+								-- Control Merge node fg vs bg input ordering
+								if reverseLayerOrder == false then
+									-- Use the standard Merge node fb and bg input order
+									if key == 1 then
+										-- Do nothing
+									elseif key == 2 then
+										if direction == 0 then
+											-- Build vertical
+											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (key - kStepBy)) + offsetY)
+										else
+											-- Build horizontal
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (key - kStepBy)) + offsetX, origin_y + 5)
+										end
+										mrg:ConnectInput("Foreground", imgTbl[key-1])
+										mrg:ConnectInput("Background", imgTbl[key])
+									else
+										if direction == 0 then
+											-- Build vertical
+											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (key - kStepBy)) + offsetY)
+										else
+											-- Build horizontal
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (key - kStepBy)) + offsetX, origin_y + 5)
+										end
+										mrg:ConnectInput("Foreground", mrgTbl[#mrgTbl])
+										mrg:ConnectInput("Background", imgTbl[key])
+									end
+								else
+									-- flip the Merge node fb and bg input order
+									if key == 1 then
+										-- Do nothing
+									elseif key == 2 then
+										if direction == 0 then
+											-- Build vertical
+											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (key - kStepBy)) + offsetY)
+										else
+											-- Build horizontal
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (key - kStepBy)) + offsetX, origin_y + 5)
+										end
+										mrg:ConnectInput("Foreground", imgTbl[key])
+										mrg:ConnectInput("Background", imgTbl[key-1])
+									else
+										if direction == 0 then
+											-- Build vertical
+											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (key - kStepBy)) + offsetY)
+										else
+											-- Build horizontal
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (key - kStepBy)) + offsetX, origin_y + 5)
+										end
+										mrg:ConnectInput("Foreground", imgTbl[key])
+										mrg:ConnectInput("Background", mrgTbl[#mrgTbl])
+									end
+
+									if mrg then
+										if alphaGain == true then
+											mrg["Gain"][fu.TIME_UNDEFINED] = 0
+										end
+		
+										print(string.format("[%03d][Merge2D Connection] %30s -> %s", key, tostring(imgTbl[key].Name), tostring(mrg.Name)  .. ".Input" .. (key)))
+		
+										table.insert(mrgTbl, mrg)
+									end
+								end
+							end
+						end
+
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
-							-- Y axis shift value
-							local kStepBy = 1
-							if addBackground == false then
-								kStepBy = 1
-							end
-
 							-- Add a Camera3D node
 							if k == 1 then
 								-- Control Camera3D node
 								if direction == 0 then
 									-- Build vertical
-									cam3D = comp:AddTool("Camera3D", origin_x + 4, origin_y + (offsetY * (k - 1 - kStepBy)))
+									cam3D = comp:AddTool("Camera3D", origin_x + 4 + preCompOffset, origin_y + (offsetY * (k - 1 - kStepBy)))
 								else
 									-- Build horizontal
-									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)), origin_y + 6)
+									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)), origin_y + 6 + preCompOffset)
 								end
 
 								-- Move the camera back to fit the ImagePlane3D
@@ -843,42 +990,68 @@ function Main()
 							end
 
 							local img3D
-							-- Control ImagePlane3D node
-							if direction == 0 then
-								-- Build vertical
-								if textureProjection == 0 then
-									img3D = comp:AddTool("Camera3D", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+							if texturePreComps == 0 or (texturePreComps >= 1 and k == 1) then
+								-- If the texturePreComps "Skip" control is active add a 3D node for each element. Otherwise only add one 3D node for all the 2D merged elements
+								-- Control ImagePlane3D node
+								if direction == 0 then
+									-- Build vertical
+									if textureProjection == 0 then
+										img3D = comp:AddTool("Camera3D", origin_x + 4 + preCompOffset , origin_y + (offsetY * (k - kStepBy)))
+									else
+										img3D = comp:AddTool("ImagePlane3D", origin_x + 4 + preCompOffset , origin_y + (offsetY * (k - kStepBy)))
+									end
 								else
-									img3D = comp:AddTool("ImagePlane3D", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									-- Build horizontal
+									if textureProjection == 0 then
+										img3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6 + preCompOffset )
+									else
+										img3D = comp:AddTool("ImagePlane3D", origin_x+ (offsetX * (k - kStepBy)), origin_y + 6 + preCompOffset )
+									end
 								end
-							else
-								-- Build horizontal
-								if textureProjection == 0 then
-									img3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
-								else
-									img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
+
+
+								-- Connect the inputs
+								if texturePreComps == 0 then
+									-- Skip mode
+									if textureProjection == 0 then
+										img3D:ConnectInput("ImageInput", imgTbl[k])
+									else
+										img3D:ConnectInput("MaterialInput", imgTbl[k])
+									end
+									
+									print(string.format("[%03d][3D Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
+								elseif texturePreComps == 1 then
+									-- MultiMerge
+									if textureProjection == 0 then
+										img3D:ConnectInput("ImageInput", mmrg)
+									else
+										img3D:ConnectInput("MaterialInput", mmrg)
+									end
+									
+									print(string.format("[%03d][3D Connection] %30s -> %s", k, tostring(mmrg.Name), tostring(img3D.Name)  .. ".Input" .. (k)))
+								elseif texturePreComps == 2 then
+									-- Merge2D mode
+									if #mrgTbl then
+										if textureProjection == 0 then
+											img3D:ConnectInput("ImageInput", mrgTbl[#mrgTbl])
+										else
+											img3D:ConnectInput("MaterialInput", mrgTbl[#mrgTbl])
+										end
+										print(string.format("[%03d][3D Connection] %30s -> %s", k, tostring(mrgTbl[#mrgTbl].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
+									end
 								end
+
+								table.insert(img3DTbl, img3D)
 							end
-
-							-- Connect the inputs
-							if textureProjection == 0 then
-								img3D:ConnectInput("ImageInput", imgTbl[k])
-							else
-								img3D:ConnectInput("MaterialInput", imgTbl[k])
-							end
-
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
-
-							table.insert(img3DTbl, img3D)
 						end
 
 						local mrg3D
 						if direction == 0 then
 							-- Build vertical
-							mrg3D = comp:AddTool("Merge3D", origin_x + 7, origin_y)
+							mrg3D = comp:AddTool("Merge3D", origin_x + 7 + preCompOffset, origin_y)
 						else
 							-- Build horizontal
-							mrg3D = comp:AddTool("Merge3D", origin_x, origin_y + 10)
+							mrg3D = comp:AddTool("Merge3D", origin_x, origin_y + 10 + preCompOffset)
 						end
 
 						-- Connect the inputs
@@ -890,10 +1063,10 @@ function Main()
 						local rnd3D
 						if direction == 0 then
 							-- Build vertical
-							rnd3D = comp:AddTool("Renderer3D", origin_x + 9, origin_y)
+							rnd3D = comp:AddTool("Renderer3D", origin_x + 9 + preCompOffset, origin_y)
 						else
 							-- Build horizontal
-							rnd3D = comp:AddTool("Renderer3D", origin_x, origin_y + 12)
+							rnd3D = comp:AddTool("Renderer3D", origin_x, origin_y + 12 + preCompOffset)
 						end
 
 						-- Connect the inputs
@@ -901,6 +1074,17 @@ function Main()
 
 						-- Enable hardware rendering
 						rnd3D.RendererType = "RendererOpenGL"
+
+						-- Set the dimensions
+						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table" and tbl.project.camera.width and tbl.project.camera.height then
+							rnd3D.Width[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.width)
+							rnd3D.Height[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.height)
+
+							rnd3D.PixelAspect[fu.TIME_UNDEFINED] = {1.5, 1}
+
+							-- Turn off auto sizing
+							rnd3D.UseFrameFormatSettings[fu.TIME_UNDEFINED] = 0
+						end
 
 						-- Select the camera
 						if cam3D and cam3D.Name then
@@ -925,7 +1109,7 @@ function Main()
 							-- Connect the image Input
 							sz:ConnectInput("Input" .. (k), imgTbl[k])
 
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(sz.Name)  .. ".Input" .. (k)))
+							print(string.format("[%03d][Swizzler Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(sz.Name)  .. ".Input" .. (k)))
 
 							-- Select the source
 							sz["Layer" .. (k) .. ".RInput"][fu.TIME_UNDEFINED] = k
@@ -1055,7 +1239,7 @@ function Main()
 							-- Connect the image Input
 							ls:ConnectInput("Input" .. (k), imgTbl[k])
 
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
+							print(string.format("[%03d][LifeSaver Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(ls.Name)  .. ".Name" .. (k)))
 
 							-- Add a new image input to the node
 							if k <= #imgTbl - 1 then
@@ -1078,7 +1262,7 @@ function Main()
 							if k == 1 then
 								-- Connect the Background Input
 								mmrg:ConnectInput("Background", imgTbl[k])
-								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
+								print(string.format("[%03d][MultiMerge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name) .. ".Background"))
 							else
 								-- Connect the "Layer#.Foreground" Inputs
 								mmrg:ConnectInput("Layer" .. (k-1)  .. ".Foreground", imgTbl[k])
@@ -1089,7 +1273,7 @@ function Main()
 								if alphaGain == true then
 									mmrg["Layer" .. (k-1)  .. ".Gain"][fu.TIME_UNDEFINED] = 0
 								end
-								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
+								print(string.format("[%03d][MultiMerge Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mmrg.Name)  .. ".Layer" .. (k-1)  .. ".Foreground"))
 							end
 						end
 					elseif mergeLoaders == 2 then
@@ -1163,7 +1347,7 @@ function Main()
 									mrg["Gain"][fu.TIME_UNDEFINED] = 0
 								end
 
-								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mrg.Name)  .. ".Input" .. (k)))
+								print(string.format("[%03d][Merge2D Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mrg.Name)  .. ".Input" .. (k)))
 
 								table.insert(mrgTbl, mrg)
 							end
@@ -1240,7 +1424,7 @@ function Main()
 								img3D:ConnectInput("MaterialInput", tex2DTbl[k])
 							end
 
-							print(string.format("[%03d][Connection] %30s -> %30s -> %s", k, tostring(imgTbl[k].Name), tostring(tex2DTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
+							print(string.format("[%03d][3D Connection] %30s -> %30s -> %s", k, tostring(imgTbl[k].Name), tostring(tex2DTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
 
 							table.insert(img3DTbl, img3D)
 						end
@@ -1275,6 +1459,17 @@ function Main()
 						-- Enable hardware rendering
 						rnd3D.RendererType = "RendererOpenGL"
 
+						-- Set the dimensions
+						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table" and tbl.project.camera.width and tbl.project.camera.height then
+							rnd3D.Width[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.width)
+							rnd3D.Height[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.height)
+
+							rnd3D.PixelAspect[fu.TIME_UNDEFINED] = {tonumber(tbl.project.camera.pixelaspectratio), 1}
+
+							-- Turn off auto sizing
+							rnd3D.UseFrameFormatSettings[fu.TIME_UNDEFINED] = 0
+						end
+
 						-- Select the camera
 						if cam3D and cam3D.Name then
 							rnd3D.CameraSelector = tostring(cam3D.Name)
@@ -1298,7 +1493,7 @@ function Main()
 							-- Connect the image Input
 							sz:ConnectInput("Input" .. (k), imgTbl[k])
 
-							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(sz.Name)  .. ".Input" .. (k)))
+							print(string.format("[%03d][Sizzler Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(sz.Name)  .. ".Input" .. (k)))
 
 							-- Select the source
 							sz["Layer" .. (k) .. ".RInput"][fu.TIME_UNDEFINED] = k
