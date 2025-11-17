@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 02.26 AM
+TVPaint Build Comp - v1 2025-11-17 10.30 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -20,6 +20,8 @@ The "adjustRenderRange" control sets the RenderEnd range to match the TVPaint im
 The "autoNameLayers" control is used to name each layer in the MultiMerge node
 
 The "showTiles" control is used if source tiles enabled in the flow
+
+The "tileColor" control is used if tile colors are enabled in the flow
 
 The "alphaGain" control can be used to enable alpha compositing for each layer in the MultiMerge node
 
@@ -58,9 +60,11 @@ addNode = 1
 -- Are source tiles enabled in the flow
 showTiles = false
 
+-- Are tile colors enabled in the flow
+tileColor = true
+
 -- Should a LifeSaver or MultiMerge node be used
 mergeLoaders = 1
-
 
 -- How should missing frames be handled with Loader nodes
 missingFrames = 1
@@ -84,7 +88,8 @@ function get(t, key)
 	end
 
 	if not found then
-		error(string.format("no key '%s' found in ScriptVal table", key))
+		-- error(string.format("[Get Element] No key '%s' found in ScriptVal table", key))
+		print(string.format("[Get Element] No key '%s' found in ScriptVal table", key))
 	end
 
 	return value
@@ -199,10 +204,11 @@ function AskForInput()
 	alphaGain = getPreferenceData("TVPaint.alphaGain", alphaGain, verbose)
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
 	showTiles = getPreferenceData("TVPaint.showTiles", showTiles, verbose)
+	tileColor = getPreferenceData("TVPaint.tileColor", tileColor, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,310
+	local width,height = 300,335
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -286,6 +292,11 @@ function AskForInput()
 				ID = "ShowTiles",
 				Text = "Source Tiles Enabled",
 				Checked = showTiles,
+			},
+			ui:CheckBox{
+				ID = "TileColor",
+				Text = "Tile Color",
+				Checked = tileColor,
 			},
 			ui:HGroup{
 				Weight = 0.01,
@@ -372,6 +383,7 @@ function AskForInput()
 		alphaGain = itm.AlphaGain.Checked
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 		showTiles = itm.ShowTiles.Checked
+		tileColor = itm.TileColor.Checked
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.addNode", itm.AddNode.CurrentIndex, verbose)
@@ -383,6 +395,7 @@ function AskForInput()
 		setPreferenceData("TVPaint.alphaGain", itm.AlphaGain.Checked, verbose)
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)
 		setPreferenceData("TVPaint.showTiles", itm.ShowTiles.Checked, verbose)
+		setPreferenceData("TVPaint.tileColor", itm.TileColor.Checked, verbose)
 
 		disp:ExitLoop()
 	end
@@ -423,6 +436,7 @@ function Main()
 			print("[Adjust Render Range] ", adjustRenderRange)
 			print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
 			print("[Missing Frames] ", missingFrames)
+			print("[Tile Color] ", tileColor)
 
 			-- Starting node position
 			local flow = comp.CurrentFrame.FlowView
@@ -556,6 +570,7 @@ function Main()
 						end
 
 						-- Extract the layer name
+						print("[Clip Layers] ", i)
 						groupTbl = get(tbl.project.clip.layers, i)
 						if type(groupTbl) == "table" and groupTbl.name then
 								local NewName = "layer_" .. tostring(groupTbl.name)
@@ -565,11 +580,22 @@ function Main()
 								table.insert(imgNameTbl, groupTbl.name)
 						end
 
+						-- Tile Color
+						if tileColor == true then
+							if type(groupTbl) == "table" and groupTbl.group and type(groupTbl.group) == "table" then
+								local tileR = groupTbl.group.red
+								local tileG = groupTbl.group.green
+								local tileB = groupTbl.group.blue
+								ldr.TileColor = {R = tileR, G = tileG, B = tileB}
+							end
+						end
+
 						-- Hold previous frames
 						ldr.MissingFrames[fu.TIME_UNDEFINED] = missingFrames
 
 						-- Update the Loader node filename
 						local link = groupTbl.link
+						print("[Clip Link] ", i)
 						local groupLinkTbl = get(link, i)
 						if type(groupLinkTbl) == "table" and groupLinkTbl.file then
 							local ldrFilename = tostring(baseImageFolder) .. tostring(groupLinkTbl.file)
@@ -819,6 +845,7 @@ function Main()
 						img.BaseFolder = tostring(baseImageFolder)
 
 						-- Extract the layer name
+						print("[Clip Layers] ", i)
 						groupTbl = get(tbl.project.clip.layers, i)
 						if type(groupTbl) == "table" and groupTbl.name then
 								local NewName = "layer_" .. tostring(groupTbl.name)
@@ -826,6 +853,17 @@ function Main()
 
 								-- Save the layer name
 								table.insert(imgNameTbl, groupTbl.name)
+						end
+
+
+						-- Tile Color
+						if tileColor == true then
+							if type(groupTbl) == "table" and groupTbl.group and type(groupTbl.group) == "table" then
+								local tileR = groupTbl.group.red
+								local tileG = groupTbl.group.green
+								local tileB = groupTbl.group.blue
+								img.TileColor = {R = tileR, G = tileG, B = tileB}
+							end
 						end
 
 						-- Save the TVPaintLinkImage node to a table
