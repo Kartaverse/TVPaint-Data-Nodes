@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 02.06 AM
+TVPaint Build Comp - v1 2025-11-17 02.26 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -434,8 +434,8 @@ function Main()
 				comp:StartUndo("Build Comp")
 
 				-- Disable the file browser dialog
-				local AutoClipBrowse = app:GetPrefs('Global.UserInterface.AutoClipBrowse')
-				app:SetPrefs('Global.UserInterface.AutoClipBrowse', false)
+				local AutoClipBrowse = app:GetPrefs("Global.UserInterface.AutoClipBrowse")
+				app:SetPrefs("Global.UserInterface.AutoClipBrowse", false)
 
 				-- Lock the comp flow area
 				comp:Lock()
@@ -1017,7 +1017,7 @@ function Main()
 				end
 
 				-- Re-enable the file browser dialog
-				app:SetPrefs('Global.UserInterface.AutoClipBrowse', AutoClipBrowse)
+				app:SetPrefs("Global.UserInterface.AutoClipBrowse", AutoClipBrowse)
 
 				-- Unlock the comp flow area
 				comp:Unlock()
@@ -1032,4 +1032,4 @@ function Main()
 end
 
 Main()
-print('[Done]')
+print("[Done]")
