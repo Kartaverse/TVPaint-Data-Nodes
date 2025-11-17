@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 11.34 AM
+TVPaint Build Comp - v1 2025-11-17 11.56 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -73,7 +73,7 @@ missingFrames = 1
 cancelScript = false
 
 -- Debugging log detail
-local verbose = true
+verbose = true
 
 function get(t, key)
 	local value = nil
@@ -106,13 +106,13 @@ function getPreferenceData(pref, defaultValue, debugPrint)
 
 	if newPreference ~= nil then
 		-- List the existing preference value
-		if (debugPrint == true) or (debugPrint == 1) then
-			if newPreference == nil then
-				print("[Reading " .. tostring(pref) .. " Preference Data] " .. "nil")
-			else
-				print("[Reading " .. tostring(pref) .. " Preference Data] " .. tostring(newPreference))
-			end
-		end
+--		if debugPrint == true then
+--			if newPreference == nil then
+--				print("[Reading " .. tostring(pref) .. " Preference Data] " .. "nil")
+--			else
+--				print("[Reading " .. tostring(pref) .. " Preference Data] " .. tostring(newPreference))
+--			end
+--		end
 	else
 		-- Force a default value into the preference & then list it
 		newPreference = defaultValue
@@ -121,13 +121,13 @@ function getPreferenceData(pref, defaultValue, debugPrint)
 		-- comp:SetData(pref, defaultValue)
 		fu:SetData(pref, defaultValue)
 
-		if (debugPrint == true) or (debugPrint == 1) then
-			if newPreference == nil then
-				print("[Creating " .. tostring(pref) .. " Preference Data] " .. "nil")
-			else
-				print("[Creating ".. tostring(pref) .. " Preference Entry] " .. tostring(newPreference))
-			end
-		end
+--		if debugPrint == true then
+--			if newPreference == nil then
+--				print("[Creating " .. tostring(pref) .. " Preference Data] " .. "nil")
+--			else
+--				print("[Creating ".. tostring(pref) .. " Preference Entry] " .. tostring(newPreference))
+--			end
+--		end
 	end
 
 	return newPreference
@@ -341,13 +341,13 @@ function AskForInput()
 	-- Add the items to the ComboBox menu
 	itm.BuildDirection:AddItem("Vertical")
 	itm.BuildDirection:AddItem("Horizontal")
-	-- Restore the BuildDirection preference
+	-- Restore the preference
 	itm.BuildDirection.CurrentIndex = direction
 
 	-- Add the items to the ComboBox menu
 	itm.AddNode:AddItem("Using Loader")
 	itm.AddNode:AddItem("Using TVPaint")
-	-- Restore the AddNode preference
+	-- Restore the preference
 	itm.AddNode.CurrentIndex = addNode
 
 	-- Add the items to the ComboBox menu
@@ -355,7 +355,7 @@ function AskForInput()
 	itm.MergeLoaders:AddItem("Using MultiMerge")
 	itm.MergeLoaders:AddItem("Using Merge")
 	itm.MergeLoaders:AddItem("Using Swizzler")
-	-- Restore the AddNode preference
+	-- Restore the preference
 	itm.MergeLoaders.CurrentIndex = mergeLoaders
 
 	-- Add the items to the ComboBox menu
@@ -363,7 +363,7 @@ function AskForInput()
 	itm.MissingFrames:AddItem("Hold Previous")
 	itm.MissingFrames:AddItem("Output Color")
 	itm.MissingFrames:AddItem("Wait")
-	-- Restore the AddNode preference
+	-- Restore the preference
 	itm.MissingFrames.CurrentIndex = missingFrames
 
 	-- The app:AddConfig() command that will capture the "Control + W" or "Control + F4" hotkeys so they will close the window instead of closing the foreground composite.
@@ -464,7 +464,7 @@ function Main()
 			-- Process ScriptVal data
 			if toolType == "ScriptVal" then
 				-- Start Undo
-				comp:StartUndo("Build Comp")
+				comp:StartUndo("TVPaint Build Comp")
 
 				-- Disable the file browser dialog
 				local AutoClipBrowse = app:GetPrefs("Global.UserInterface.AutoClipBrowse")
