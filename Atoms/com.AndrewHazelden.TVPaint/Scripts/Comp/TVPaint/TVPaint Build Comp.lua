@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 01.01 AM
+TVPaint Build Comp - v1 2025-11-17 02.06 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -487,6 +487,8 @@ function Main()
 					offsetY = 3
 				end
 
+				local offsetX = 2
+
 				if addNode == 0 then
 					-- Loader Node
 					local bg
@@ -496,12 +498,24 @@ function Main()
 
 					-- Add the Background node
 					if addBackground == true then
-						if mergeLoaders == 2 then
-							-- Add a Background node to the final Merge node in the heap
-							local c = layer_max + 1
-							bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (c - 1)))
+						if direction == 0 then
+							-- Build vertical
+							if mergeLoaders == 2 then
+								-- Add a Background node to the final Merge node in the heap
+								local c = layer_max + 1
+								bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (c - 1)))
+							else
+								bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+							end
 						else
-							bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+							-- Build horizontal
+							if mergeLoaders == 2 then
+								-- Add a Background node to the final Merge node in the heap
+								local c = layer_max + 1
+								bg = comp:AddTool("Background", origin_x + (offsetX * (c - 1)), origin_y + 2)
+							else
+								bg = comp:AddTool("Background", origin_x + (offsetX * (0 - 1)), origin_y + 2)
+							end
 						end
 
 						-- Set the color
@@ -532,7 +546,14 @@ function Main()
 						comp.CurrentFrame.FlowView:Select() 
 
 						-- Add the Loader node
-						local ldr = comp:AddTool("Loader", origin_x + 2, origin_y + (offsetY * (i - 1)))
+						local ldr
+						if direction == 0 then
+							-- Build vertical
+							ldr = comp:AddTool("Loader", origin_x + 2, origin_y + (offsetY * (i - 1)))
+						else
+							-- Build horizontal
+							ldr = comp:AddTool("Loader", origin_x + (offsetX * (i - 1)), origin_y + 2)
+						end
 
 						-- Extract the layer name
 						groupTbl = get(tbl.project.clip.layers, i)
@@ -561,8 +582,15 @@ function Main()
 
 					-- When adding merge nodes sort the image table
 					if mergeLoaders == 2 then
-						-- Sort using the vertical position
-						table.sort(imgTbl, function(a,b) return select(2, comp.CurrentFrame.FlowView:GetPos(a)) < select(2, comp.CurrentFrame.FlowView:GetPos(b)) end)
+						if direction == 0 then
+							-- Build vertical
+							-- Sort using the vertical position
+							table.sort(imgTbl, function(a,b) return select(2, comp.CurrentFrame.FlowView:GetPos(a)) < select(2, comp.CurrentFrame.FlowView:GetPos(b)) end)
+						else
+							-- Build horizontal
+							-- Sort using the horizontal position
+							table.sort(imgTbl, function(a,b) return select(1, comp.CurrentFrame.FlowView:GetPos(a)) < select(1, comp.CurrentFrame.FlowView:GetPos(b)) end)
+						end
 					end
 
 					-- What output node should be used?
@@ -570,7 +598,14 @@ function Main()
 						-- Add a LifeSaver node
 
 						-- Connect the TVPaintLinkImage nodes to a LifeSaver node
-						local ls = comp:AddTool("Fuse.LifeSaver", origin_x + 4, origin_y)
+						local ls
+						if direction == 0 then
+							-- Build vertical
+							ls = comp:AddTool("Fuse.LifeSaver", origin_x + 4, origin_y)
+						else
+							-- Build horizontal
+							ls = comp:AddTool("Fuse.LifeSaver", origin_x, origin_y + 5)
+						end
 
 						-- Name the EXR
 						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
@@ -594,7 +629,14 @@ function Main()
 					elseif mergeLoaders == 1 then
 						-- Add a MultiMerge node
 						-- Connect the Loader nodes to a MultiMerge node
-						local mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y)
+						local mmrg
+						if direction == 0 then
+							-- Build vertical
+							mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y)
+						else
+							-- Build horizontal
+							mmrg = comp:AddTool("MultiMerge", origin_x, origin_y + 5)
+						end
 
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
@@ -634,11 +676,23 @@ function Main()
 								if k == 1 then
 									-- Do nothing
 								elseif k == 2 then
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", imgTbl[k-1])
 									mrg:ConnectInput("Background", imgTbl[k])
 								else
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", mrgTbl[#mrgTbl])
 									mrg:ConnectInput("Background", imgTbl[k])
 								end
@@ -647,11 +701,23 @@ function Main()
 								if k == 1 then
 									-- Do nothing
 								elseif k == 2 then
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", imgTbl[k])
 									mrg:ConnectInput("Background", imgTbl[k-1])
 								else
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", imgTbl[k])
 									mrg:ConnectInput("Background", mrgTbl[#mrgTbl])
 								end
@@ -661,15 +727,22 @@ function Main()
 								if alphaGain == true then
 									mrg["Gain"][fu.TIME_UNDEFINED] = 0
 								end
-	
+
 								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mrg.Name)  .. ".Input" .. (k)))
-	
+
 								table.insert(mrgTbl, mrg)
 							end
 						end
 					elseif mergeLoaders == 3 then
 						-- Add a Swizzler node
-						local sz = comp:AddTool("Swizzler", origin_x + 4, origin_y)
+						local sz
+						if direction == 0 then
+							-- Build vertical
+							sz = comp:AddTool("Swizzler", origin_x + 4, origin_y)
+						else
+							-- Build horizontal
+							sz = comp:AddTool("Swizzler", origin_x, origin_y + 5)
+						end
 
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
@@ -697,9 +770,21 @@ function Main()
 						if mergeLoaders == 2 then
 							-- Add a Background node to the final Merge node in the heap
 							local c = layer_max + 1
-							bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (c - 1)))
+							if direction == 0 then
+								-- Build vertical
+								bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (c - 1)))
+							else
+								-- Build horizontal
+								bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + (offsetX * (c - 1)), origin_y + 2)
+							end
 						else
-							bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+							if direction == 0 then
+								-- Build vertical
+								bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+							else
+								-- Build horizontal
+								bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + (offsetX * (0 - 1)), origin_y + 2)
+							end
 						end
 
 						-- Connect the inputs
@@ -713,8 +798,14 @@ function Main()
 
 					for i = startLayer, endLayer, stepBy do
 						-- Add the TVPaintLinkImage node
-						local img = comp:AddTool("Fuse.TVPaintLinkImage", origin_x + 2, origin_y + (offsetY * (i - 1)))
-
+						local img
+						if direction == 0 then
+							-- Build vertical
+							img = comp:AddTool("Fuse.TVPaintLinkImage", origin_x + 2, origin_y + (offsetY * (i - 1)))
+						else
+							-- Build horizontal
+							img = comp:AddTool("Fuse.TVPaintLinkImage", origin_x + (offsetX * (i - 1)), origin_y + 2)
+						end
 						-- Connect the inputs
 						img:ConnectInput("ScriptVal", selectedTool)
 
@@ -743,8 +834,15 @@ function Main()
 
 					-- When adding merge nodes sort the image table
 					if mergeLoaders == 2 then
-						-- Sort using the vertical position
-						table.sort(imgTbl, function(a,b) return select(2, comp.CurrentFrame.FlowView:GetPos(a)) < select(2, comp.CurrentFrame.FlowView:GetPos(b)) end)
+						if direction == 0 then
+							-- Build vertical
+							-- Sort using the vertical position
+							table.sort(imgTbl, function(a,b) return select(2, comp.CurrentFrame.FlowView:GetPos(a)) < select(2, comp.CurrentFrame.FlowView:GetPos(b)) end)
+						else
+							-- Build horizontal
+							-- Sort using the horizontal position
+							table.sort(imgTbl, function(a,b) return select(1, comp.CurrentFrame.FlowView:GetPos(a)) < select(1, comp.CurrentFrame.FlowView:GetPos(b)) end)
+						end
 					end
 
 					-- What output node should be used?
@@ -752,7 +850,14 @@ function Main()
 						-- Add a LifeSaver node
 
 						-- Connect the TVPaintLinkImage nodes to a LifeSaver node
-						local ls = comp:AddTool("Fuse.LifeSaver", origin_x + 4, origin_y)
+						local ls
+						if direction == 0 then
+							-- Build vertical
+							ls = comp:AddTool("Fuse.LifeSaver", origin_x + 4, origin_y)
+						else
+							-- Build horizontal
+							ls = comp:AddTool("Fuse.LifeSaver", origin_x, origin_y + 5)
+						end
 
 						-- Name the EXR
 						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
@@ -776,8 +881,14 @@ function Main()
 					elseif mergeLoaders == 1 then
 						-- Add a MultiMerge node
 						-- Connect the TVPaintLinkImage nodes to a MultiMerge node
-						local mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y)
-
+						local mmrg
+						if direction == 0 then
+							-- Build vertical
+							mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y)
+						else
+							-- Build horizontal
+							mmrg = comp:AddTool("MultiMerge", origin_x, origin_y + 5)
+						end
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
 							if k == 1 then
@@ -816,11 +927,23 @@ function Main()
 								if k == 1 then
 									-- Do nothing
 								elseif k == 2 then
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", imgTbl[k-1])
 									mrg:ConnectInput("Background", imgTbl[k])
 								else
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", mrgTbl[#mrgTbl])
 									mrg:ConnectInput("Background", imgTbl[k])
 								end
@@ -829,11 +952,23 @@ function Main()
 								if k == 1 then
 									-- Do nothing
 								elseif k == 2 then
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", imgTbl[k])
 									mrg:ConnectInput("Background", imgTbl[k-1])
 								else
-									mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									if direction == 0 then
+										-- Build vertical
+										mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+									else
+										-- Build horizontal
+										mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)), origin_y + 5)
+									end
 									mrg:ConnectInput("Foreground", imgTbl[k])
 									mrg:ConnectInput("Background", mrgTbl[#mrgTbl])
 								end
@@ -843,15 +978,22 @@ function Main()
 								if alphaGain == true then
 									mrg["Gain"][fu.TIME_UNDEFINED] = 0
 								end
-	
+
 								print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(mrg.Name)  .. ".Input" .. (k)))
-	
+
 								table.insert(mrgTbl, mrg)
 							end
 						end
 					elseif mergeLoaders == 3 then
 						-- Add a Swizzler node
-						local sz = comp:AddTool("Swizzler", origin_x + 4, origin_y)
+						local sz
+						if direction == 0 then
+							-- Build vertical
+							sz = comp:AddTool("Swizzler", origin_x + 4, origin_y)
+						else
+							-- Build horizontal
+							sz = comp:AddTool("Swizzler", origin_x, origin_y + 5)
+						end
 
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
