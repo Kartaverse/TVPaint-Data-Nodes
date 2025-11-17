@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 02.11 PM
+TVPaint Build Comp - v1 2025-11-17 03.56 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -61,6 +61,9 @@ direction = 1
 
 -- Should the a Loader or TVPaint Layer node be used
 addNode = 1
+
+-- Should textures be projected through cameras
+textureProjection = 0
 
 -- Are source tiles enabled in the flow
 showTiles = false
@@ -210,11 +213,12 @@ function AskForInput()
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
 	showTiles = getPreferenceData("TVPaint.showTiles", showTiles, verbose)
 	tileColor = getPreferenceData("TVPaint.tileColor", tileColor, verbose)
+	textureProjection = getPreferenceData("TVPaint.TextureProjection", textureProjection, verbose)
 	verbose = getPreferenceData("TVPaint.verbose", verbose, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,255
+	local width,height = 300,280
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -256,6 +260,17 @@ function AskForInput()
 				ui:ComboBox{
 					ID = "MergeLoaders",
 					Text = "Merge Loaders",
+				},
+			},
+			ui:HGroup{
+				Weight = 0.01,
+				ui:Label{
+					ID = "TextureProjectionLabel",
+					Text = "Texture Projection",
+				},
+				ui:ComboBox{
+					ID = "TextureProjection",
+					Text = "Camera3D Texture Projection",
 				},
 			},
 			ui:HGroup{
@@ -365,6 +380,12 @@ function AskForInput()
 	itm.MergeLoaders.CurrentIndex = mergeLoaders
 
 	-- Add the items to the ComboBox menu
+	itm.TextureProjection:AddItem("Camera3D")
+	itm.TextureProjection:AddItem("ImagePlane3D")
+	-- Restore the preference
+	itm.TextureProjection.CurrentIndex = textureProjection
+
+	-- Add the items to the ComboBox menu
 	itm.MissingFrames:AddItem("Fail")
 	itm.MissingFrames:AddItem("Hold Previous")
 	itm.MissingFrames:AddItem("Output Color")
@@ -405,6 +426,7 @@ function AskForInput()
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 		showTiles = itm.ShowTiles.Checked
 		tileColor = itm.TileColor.Checked
+		textureProjection = itm.TextureProjection.CurrentIndex
 		verbose = itm.Verbose.Checked
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
@@ -418,6 +440,7 @@ function AskForInput()
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)
 		setPreferenceData("TVPaint.showTiles", itm.ShowTiles.Checked, verbose)
 		setPreferenceData("TVPaint.tileColor", itm.TileColor.Checked, verbose)
+		setPreferenceData("TVPaint.textureProjection", itm.TextureProjection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.verbose", itm.Verbose.Checked, verbose)
 
 		disp:ExitLoop()
@@ -461,6 +484,7 @@ function Main()
 				print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
 				print("[Missing Frames] ", missingFrames)
 				print("[Tile Color] ", tileColor)
+				print("[Texture Projection] ", textureProjection)
 			end
 
 			-- Starting node position
@@ -822,14 +846,26 @@ function Main()
 							-- Control ImagePlane3D node
 							if direction == 0 then
 								-- Build vertical
-								img3D = comp:AddTool("ImagePlane3D", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+								if textureProjection == 0 then
+									img3D = comp:AddTool("Camera3D", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+								else
+									img3D = comp:AddTool("ImagePlane3D", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
+								end
 							else
 								-- Build horizontal
-								img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
+								if textureProjection == 0 then
+									img3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
+								else
+									img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 6)
+								end
 							end
 
 							-- Connect the inputs
-							img3D:ConnectInput("MaterialInput", imgTbl[k])
+							if textureProjection == 0 then
+								img3D:ConnectInput("ImageInput", imgTbl[k])
+							else
+								img3D:ConnectInput("MaterialInput", imgTbl[k])
+							end
 
 							print(string.format("[%03d][Connection] %30s -> %s", k, tostring(imgTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
 
@@ -1183,14 +1219,26 @@ function Main()
 							-- Control ImagePlane3D node
 							if direction == 0 then
 								-- Build vertical
-								img3D = comp:AddTool("ImagePlane3D", origin_x + 6, origin_y + (offsetY * (k - kStepBy)))
+								if textureProjection == 0 then
+									img3D = comp:AddTool("Camera3D", origin_x + 6, origin_y + (offsetY * (k - kStepBy)))
+								else
+									img3D = comp:AddTool("ImagePlane3D", origin_x + 6, origin_y + (offsetY * (k - kStepBy)))
+								end
 							else
 								-- Build horizontal
-								img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 8)
+								if textureProjection == 0 then
+									img3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 8)
+								else
+									img3D = comp:AddTool("ImagePlane3D", origin_x + (offsetX * (k - kStepBy)), origin_y + 8)
+								end
 							end
 
 							-- Connect the inputs
-							img3D:ConnectInput("MaterialInput", tex2DTbl[k])
+							if textureProjection == 0 then
+								img3D:ConnectInput("ImageInput", tex2DTbl[k])
+							else
+								img3D:ConnectInput("MaterialInput", tex2DTbl[k])
+							end
 
 							print(string.format("[%03d][Connection] %30s -> %30s -> %s", k, tostring(imgTbl[k].Name), tostring(tex2DTbl[k].Name), tostring(img3D.Name)  .. ".Input" .. (k)))
 
