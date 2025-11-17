@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 10.30 AM
+TVPaint Build Comp - v1 2025-11-17 11.34 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -195,9 +195,9 @@ function setPreferenceData(pref, value, debugPrint)
 end
 
 function AskForInput()
-	direction = getPreferenceData("TVPaint.direction", 1, verbose)
-	addNode = getPreferenceData("TVPaint.addNode", 1, verbose)
-	mergeLoaders = getPreferenceData("TVPaint.mergeLoaders", 1, verbose)
+	direction = getPreferenceData("TVPaint.direction", direction, verbose)
+	addNode = getPreferenceData("TVPaint.addNode", addNode, verbose)
+	mergeLoaders = getPreferenceData("TVPaint.mergeLoaders", mergeLoaders, verbose)
 	adjustRenderRange = getPreferenceData("TVPaint.adjustRenderRange", adjustRenderRange, verbose)
 	addBackground = getPreferenceData("TVPaint.addBackground", addBackground, verbose)
 	autoNameLayers = getPreferenceData("TVPaint.autoNameLayers", autoNameLayers, verbose)
@@ -205,10 +205,11 @@ function AskForInput()
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
 	showTiles = getPreferenceData("TVPaint.showTiles", showTiles, verbose)
 	tileColor = getPreferenceData("TVPaint.tileColor", tileColor, verbose)
+	verbose = getPreferenceData("TVPaint.verbose", verbose, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,335
+	local width,height = 300,255
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -263,40 +264,54 @@ function AskForInput()
 					Text = "Missing Frames",
 				},
 			},
-			ui:CheckBox{
-				ID = "AdjustRenderRange",
-				Text = "Adjust Render Range",
-				Checked = adjustRenderRange,
-			},
-			ui:CheckBox{
-				ID = "AutoNameLayers",
-				Text = "Auto Name Layers",
-				Checked = autoNameLayers,
-			},
-			ui:CheckBox{
-				ID = "AlphaGain",
-				Text = "Alpha Gain Zero",
-				Checked = alphaGain,
-			},
-			ui:CheckBox{
-				ID = "AddBackground",
-				Text = "Add Background",
-				Checked = addBackground,
-			},
-			ui:CheckBox{
-				ID = "ReverseLayerOrder",
-				Text = "Reverse Layer Order",
-				Checked = reverseLayerOrder,
-			},
-			ui:CheckBox{
-				ID = "ShowTiles",
-				Text = "Source Tiles Enabled",
-				Checked = showTiles,
-			},
-			ui:CheckBox{
-				ID = "TileColor",
-				Text = "Tile Color",
-				Checked = tileColor,
+			ui:HGroup{
+				Weight = 0.5,
+				ui:VGroup{
+					Weight = 0.25,
+					ui:CheckBox{
+						ID = "AdjustRenderRange",
+						Text = "Adjust Render Range",
+						Checked = adjustRenderRange,
+					},
+					ui:CheckBox{
+						ID = "AutoNameLayers",
+						Text = "Auto Name Layers",
+						Checked = autoNameLayers,
+					},
+					ui:CheckBox{
+						ID = "TileColor",
+						Text = "Tile Color",
+						Checked = tileColor,
+					},
+					ui:CheckBox{
+						ID = "ShowTiles",
+						Text = "Source Tiles Enabled",
+						Checked = showTiles,
+					},
+				},
+				ui:VGroup{
+					Weight = 0.25,
+					ui:CheckBox{
+						ID = "AddBackground",
+						Text = "Add Background",
+						Checked = addBackground,
+					},
+					ui:CheckBox{
+						ID = "AlphaGain",
+						Text = "Alpha Gain Zero",
+						Checked = alphaGain,
+					},
+					ui:CheckBox{
+						ID = "ReverseLayerOrder",
+						Text = "Reverse Layer Order",
+						Checked = reverseLayerOrder,
+					},
+					ui:CheckBox{
+						ID = "Verbose",
+						Text = "Verbose",
+						Checked = verbose,
+					},
+				},
 			},
 			ui:HGroup{
 				Weight = 0.01,
@@ -384,6 +399,7 @@ function AskForInput()
 		reverseLayerOrder = itm.ReverseLayerOrder.Checked
 		showTiles = itm.ShowTiles.Checked
 		tileColor = itm.TileColor.Checked
+		verbose = itm.Verbose.Checked
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.addNode", itm.AddNode.CurrentIndex, verbose)
@@ -396,6 +412,7 @@ function AskForInput()
 		setPreferenceData("TVPaint.reverseLayerOrder", itm.ReverseLayerOrder.Checked, verbose)
 		setPreferenceData("TVPaint.showTiles", itm.ShowTiles.Checked, verbose)
 		setPreferenceData("TVPaint.tileColor", itm.TileColor.Checked, verbose)
+		setPreferenceData("TVPaint.verbose", itm.Verbose.Checked, verbose)
 
 		disp:ExitLoop()
 	end
@@ -426,17 +443,19 @@ function Main()
 				end
 			end
 
-			print("[Base Image Folder] ", baseImageFolder)
-			print("[Auto Media Node] ", addNode)
-			print("[Auto Output Node] ", mergeLoaders)
-			print("[Auto Name Layers] ", autoNameLayers)
-			print("[Alpha Gain Zero] ", alphaGain)
-			print("[Add Background] ", addBackground)
-			print("[Reverse Layer Order] ", reverseLayerOrder)
-			print("[Adjust Render Range] ", adjustRenderRange)
-			print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
-			print("[Missing Frames] ", missingFrames)
-			print("[Tile Color] ", tileColor)
+			if verbose == true then
+				print("[Base Image Folder] ", baseImageFolder)
+				print("[Auto Media Node] ", addNode)
+				print("[Auto Output Node] ", mergeLoaders)
+				print("[Auto Name Layers] ", autoNameLayers)
+				print("[Alpha Gain Zero] ", alphaGain)
+				print("[Add Background] ", addBackground)
+				print("[Reverse Layer Order] ", reverseLayerOrder)
+				print("[Adjust Render Range] ", adjustRenderRange)
+				print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
+				print("[Missing Frames] ", missingFrames)
+				print("[Tile Color] ", tileColor)
+			end
 
 			-- Starting node position
 			local flow = comp.CurrentFrame.FlowView
@@ -570,7 +589,7 @@ function Main()
 						end
 
 						-- Extract the layer name
-						print("[Clip Layers] ", i)
+						if verbose == true then print("[Clip Layers] ", i) end
 						groupTbl = get(tbl.project.clip.layers, i)
 						if type(groupTbl) == "table" and groupTbl.name then
 								local NewName = "layer_" .. tostring(groupTbl.name)
@@ -595,7 +614,7 @@ function Main()
 
 						-- Update the Loader node filename
 						local link = groupTbl.link
-						print("[Clip Link] ", i)
+						if verbose == true then print("[Clip Link] ", i) end
 						local groupLinkTbl = get(link, i)
 						if type(groupLinkTbl) == "table" and groupLinkTbl.file then
 							local ldrFilename = tostring(baseImageFolder) .. tostring(groupLinkTbl.file)
@@ -845,7 +864,7 @@ function Main()
 						img.BaseFolder = tostring(baseImageFolder)
 
 						-- Extract the layer name
-						print("[Clip Layers] ", i)
+						if verbose == true then print("[Clip Layers] ", i) end
 						groupTbl = get(tbl.project.clip.layers, i)
 						if type(groupTbl) == "table" and groupTbl.name then
 								local NewName = "layer_" .. tostring(groupTbl.name)
