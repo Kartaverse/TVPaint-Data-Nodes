@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 12.03 AM
+TVPaint Build Comp - v1 2025-11-17 01.01 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -334,7 +334,7 @@ function AskForInput()
 
 	-- Add the items to the ComboBox menu
 	itm.MissingFrames:AddItem("Fail")
-	itm.MissingFrames:AddItem("Hold Prevous")
+	itm.MissingFrames:AddItem("Hold Previous")
 	itm.MissingFrames:AddItem("Output Color")
 	itm.MissingFrames:AddItem("Wait")
 	-- Restore the AddNode preference
@@ -489,13 +489,20 @@ function Main()
 
 				if addNode == 0 then
 					-- Loader Node
+					local bg
 
 					-- Deselect all nodes
 					comp.CurrentFrame.FlowView:Select() 
 
 					-- Add the Background node
 					if addBackground == true then
-						local bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+						if mergeLoaders == 2 then
+							-- Add a Background node to the final Merge node in the heap
+							local c = layer_max + 1
+							bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (c - 1)))
+						else
+							bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+						end
 
 						-- Set the color
 						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.bg and type(tbl.project.clip.bg) == "table" then
@@ -615,7 +622,7 @@ function Main()
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
 							-- Y axis shift value
-							local kStepBy = 2
+							local kStepBy = 1
 							if addBackground == false then
 								kStepBy = 1
 							end
@@ -687,7 +694,13 @@ function Main()
 					-- TVPaint Layer Node
 					-- Add the TVPaintBackground node
 					if addBackground == true then
-						local bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+						if mergeLoaders == 2 then
+							-- Add a Background node to the final Merge node in the heap
+							local c = layer_max + 1
+							bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (c - 1)))
+						else
+							bg = comp:AddTool("Fuse.TVPaintBackground", origin_x + 2, origin_y + (offsetY * (0 - 1)))
+						end
 
 						-- Connect the inputs
 						bg:ConnectInput("ScriptVal", selectedTool)
@@ -791,7 +804,7 @@ function Main()
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
 							-- Y axis shift value
-							local kStepBy = 2
+							local kStepBy = 1
 							if addBackground == false then
 								kStepBy = 1
 							end
