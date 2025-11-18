@@ -1,5 +1,5 @@
 --[[--
-TVPaint Comp Builder - v1 2025-11-18 02.44 PM
+TVPaint Comp Builder - v1 2025-11-18 02.50 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -585,12 +585,12 @@ function Main()
 
 				-- Extract the number of clip layers
 				local layer_max = 0
-				if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip.layers and type(tbl.project.clip.layers) == "table" then
+				if type(tbl) == "table" and tbl.project and tbl.project.clip and tbl.project.clip.layers and type(tbl.project.clip.layers) == "table" then
 					layer_max = tonumber(table.getn(tbl.project.clip.layers)) - 2
 				end
 
 				-- Image count
-				if adjustRenderRange == true and type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and tbl.project.clip["image-count"] then
+				if adjustRenderRange == true and type(tbl) == "table" and tbl.project and tbl.project.clip and tbl.project.clip["image-count"] then
 					local renderStart = 0
 					local renderEnd = tonumber(tbl.project.clip["image-count"])
 
@@ -661,7 +661,7 @@ function Main()
 						end
 
 						-- Set the color
-						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.bg and type(tbl.project.clip.bg) == "table" then
+						if type(tbl) == "table" and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.bg and type(tbl.project.clip.bg) == "table" then
 							bg.TopLeftRed[fu.TIME_UNDEFINED]  = tbl.project.clip.bg.red * (1 / 255)
 							bg.TopLeftGreen[fu.TIME_UNDEFINED] = tbl.project.clip.bg.green * (1 / 255)
 							bg.TopLeftBlue[fu.TIME_UNDEFINED] = tbl.project.clip.bg.blue * (1 / 255)
@@ -669,7 +669,7 @@ function Main()
 						end
 
 						-- Set the dimensions
-						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.width and tbl.project.clip.height then
+						if type(tbl) == "table" and tbl.project and tbl.project.clip and type(tbl.project.clip) == "table" and tbl.project.clip.width and tbl.project.clip.height then
 							bg.Width[fu.TIME_UNDEFINED] = tonumber(tbl.project.clip.width)
 							bg.Height[fu.TIME_UNDEFINED] = tonumber(tbl.project.clip.height)
 
@@ -1168,7 +1168,7 @@ function Main()
 						rnd3D.RendererType = "RendererOpenGL"
 
 						-- Set the dimensions
-						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table" and tbl.project.camera.width and tbl.project.camera.height then
+						if type(tbl) == "table" and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table" and tbl.project.camera.width and tbl.project.camera.height then
 							rnd3D.Width[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.width)
 							rnd3D.Height[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.height)
 
@@ -1562,7 +1562,7 @@ function Main()
 						rnd3D.RendererType = "RendererOpenGL"
 
 						-- Set the dimensions
-						if type(tbl) == "table" and tbl.project and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table" and tbl.project.camera.width and tbl.project.camera.height then
+						if type(tbl) == "table" and tbl.project and tbl.project.camera and type(tbl.project.camera) == "table" and tbl.project.camera.width and tbl.project.camera.height then
 							rnd3D.Width[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.width)
 							rnd3D.Height[fu.TIME_UNDEFINED] = tonumber(tbl.project.camera.height)
 
