@@ -2,7 +2,7 @@
 
 ## Overview
 
-The TVPaint data nodes for Blackmagic Design Resolve/Fusion allow you to interact with 2D animation data inside a node graph. This approach works with a series of nodal operators that allow you to edit and modify the TVPaint JSON data on the fly.
+The TVPaint data nodes for Blackmagic Design Resolve Studio/Fusion Studio allow you to interact with 2D animation data inside a node graph. This approach works with a series of nodal operators that allow you to edit and modify the TVPaint JSON data on the fly.
 
 This TVPaint implementation is based around the "ScriptVal" datatype in Fusion, and works using ideas pioneered by the Vonk Ultra data node project.
 
@@ -10,8 +10,7 @@ This TVPaint implementation is based around the "ScriptVal" datatype in Fusion, 
 
 To run TVPaint based workflows on your Resolve/Fusion system you will need the following tools:
 
-- BMD Resolve (Free) / Resolve Studio v18.5+
-- BMD Fusion Studio
+- BMD Resolve Studio or Fusion Studio v18.5 - v20+
 - Reactor Package Manager (Free)
 - Vonk Ultra Data Nodes (via Reactor)
 
@@ -38,6 +37,25 @@ Look in the Fusion "Script/TVPaint" menu to see the automation scripts.
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
 ![TVPaint Build Comp Script](Docs/Images/script-tvpaint-build-comp.png)
+
+#### Usage:
+
+1. Add a TVPaintLoader node to your Fusion comp. Use the node's (Browse) button to select a TVPaint exported .json file on your hard disk. The JSON document's filepath will be entered into the Filename field.
+2. Select the TVPaintLoader node in the node graph area.
+3. Launch the "Scripts > TVPaint > TVPaint Build Comp " menu item. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
+4. A TVPaint for Fusion nodegraph will be generated. Keep in mind, that a new undo state is created for you automatically so you can easily revert the changes made to your node graph.
+
+### Remove Unselected Nodes
+
+This script is used to quickly cleanup a comp when you are doing repetitive experiments. Any node that is unselected in the node graph will be instantly deleted. As a result, this will leave you with only the currently selected nodes in the comp.
+
+An undo point is defined when the script is run so you can revert the changes easily.
+
+#### Usage:
+
+1. Select several nodes in the flow area.
+2. Launch the "Scripts > Remove Unselected Nodes " menu item.
+3. All non-selected nodes will be removed from the the node graph.
 
 ### Show Fuses Folder
 
