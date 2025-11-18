@@ -1,5 +1,5 @@
 --[[--
-TVPaint Comp Builder - v1 2025-11-18 04.58 PM
+TVPaint Comp Builder - v1 2025-11-18 05.07 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -535,11 +535,22 @@ function Main()
 				-- Name the EXR
 				local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
 				
+				-- Missing file fallback handling
 				if baseJSONFilename == "" then
-					error("[Error][TVPaintLoader] Please enter a JSON filename in the TVPaintLoader node.")
+					print("[Error][TVPaintLoader] Please enter a JSON filename in the TVPaintLoader node.")
+					local suggestedFolder = comp:MapPath('Comp:/')
+					baseJSONFilename = fu:RequestFile(suggestedFolder)
+					if bmd.fileexists(comp:MapPath(baseJSONFilename)) then
+						selectedTool["Filename"][fu.TIME_UNDEFINED] = baseJSONFilename
+					end
 				end
 				if not bmd.fileexists(comp:MapPath(baseJSONFilename)) then
-					error("[Error][TVPaintLoader] The selected TVPaint .json file does not exist on disk: " .. tostring(baseJSONFilename))
+					print("[Error][TVPaintLoader] The selected TVPaint .json file does not exist on disk: " .. tostring(baseJSONFilename))
+					local suggestedFolder = comp:MapPath('Comp:/')
+					baseJSONFilename = fu:RequestFile(suggestedFolder)
+					if bmd.fileexists(comp:MapPath(baseJSONFilename)) then
+						selectedTool["Filename"][fu.TIME_UNDEFINED] = baseJSONFilename
+					end
 				end
 	
 				if skipShowingUI == false then
