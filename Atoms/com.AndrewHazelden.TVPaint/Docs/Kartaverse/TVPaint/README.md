@@ -13,8 +13,9 @@ This TVPaint implementation is based around the "ScriptVal" datatype in Fusion, 
 To run TVPaint based workflows on your Resolve/Fusion system you will need the following tools:
 
 - BMD Resolve Studio or Fusion Studio v18.5 - v20+
-- Reactor Package Manager (Free)
+- Reactor Standalone Package Manager (Free)
 - Vonk Ultra Data Nodes (via Reactor)
+- Vonk DragDrop | vJSONFromFile (via Reactor)
 
 ## Open Source Software License Term
 
