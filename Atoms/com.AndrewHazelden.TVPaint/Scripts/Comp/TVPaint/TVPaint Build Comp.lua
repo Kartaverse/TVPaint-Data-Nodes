@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-18 01.29 AM
+TVPaint Build Comp - v1 2025-11-18 03.12 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -623,7 +623,7 @@ function Main()
 					if addBackground == true then
 						if direction == 0 then
 							-- Build vertical
-							if mergeLoaders == 2 then
+							if mergeLoaders == 2 or mergeLoaders == 3 then
 								-- Add a Background node to the final Merge node in the heap
 								local c = layer_max + 1
 								bg = comp:AddTool("Background", origin_x + 2, origin_y + (offsetY * (c - 1)))
@@ -632,7 +632,7 @@ function Main()
 							end
 						else
 							-- Build horizontal
-							if mergeLoaders == 2 then
+							if mergeLoaders == 2 or mergeLoaders == 3 then
 								-- Add a Background node to the final Merge node in the heap
 								local c = layer_max + 1
 								bg = comp:AddTool("Background", origin_x + (offsetX * (c - 1)), origin_y + 2)
@@ -893,10 +893,10 @@ function Main()
 							-- Connect the Loader nodes to a MultiMerge node
 							if direction == 0 then
 								-- Build vertical
-								mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y + offsetY)
+								mmrg = comp:AddTool("MultiMerge", origin_x + 4, origin_y)
 							else
 								-- Build horizontal
-								mmrg = comp:AddTool("MultiMerge", origin_x + offsetX, origin_y + 5)
+								mmrg = comp:AddTool("MultiMerge", origin_x , origin_y + 7)
 							end
 
 							-- Adjust the layer connection ordering
@@ -959,7 +959,7 @@ function Main()
 											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
 										else
 											-- Build horizontal
-											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)) + offsetX, origin_y + 5)
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - 1 - kStepBy)) + offsetX, origin_y + 5)
 										end
 										mrg:ConnectInput("Foreground", imgTbl[k-1])
 										mrg:ConnectInput("Background", imgTbl[k])
@@ -969,7 +969,7 @@ function Main()
 											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
 										else
 											-- Build horizontal
-											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)) + offsetX, origin_y + 5)
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - 1 - kStepBy)) + offsetX, origin_y + 5)
 										end
 										mrg:ConnectInput("Foreground", mrgTbl[#mrgTbl])
 										mrg:ConnectInput("Background", imgTbl[k])
@@ -985,7 +985,7 @@ function Main()
 											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
 										else
 											-- Build horizontal
-											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)) + offsetX, origin_y + 5)
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - 1 - kStepBy)) + offsetX, origin_y + 5)
 										end
 										--mrg:ConnectInput("Foreground", imgTbl[k])
 										--mrg:ConnectInput("Background", imgTbl[k-1])
@@ -997,7 +997,7 @@ function Main()
 											mrg = comp:AddTool("Merge", origin_x + 4, origin_y + (offsetY * (k - kStepBy)))
 										else
 											-- Build horizontal
-											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - kStepBy)) + offsetX, origin_y + 5)
+											mrg = comp:AddTool("Merge", origin_x + (offsetX * (k - 1 - kStepBy)) + offsetX, origin_y + 5)
 										end
 										--mrg:ConnectInput("Foreground", imgTbl[k])
 										--mrg:ConnectInput("Background", mrgTbl[#mrgTbl])
