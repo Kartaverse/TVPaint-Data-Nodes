@@ -1,5 +1,5 @@
 --[[--
-TVPaint Comp Builder - v1 2025-11-18 02.50 PM
+TVPaint Comp Builder - v1 2025-11-18 04.58 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -526,38 +526,48 @@ function Main()
 		if toolOutput ~= nil then
 			toolType = toolOutput:GetAttrs().OUTS_DataType
 
-			if skipShowingUI == false then
-				AskForInput()
-
-				-- Stop running the script
-				if cancelScript == true then
-					return
-				end
-			end
-
-			if verbose == true then
-				print("[Base Image Folder] ", baseImageFolder)
-				print("[Auto Media Node] ", addNode)
-				print("[Auto Output Node] ", mergeLoaders)
-				print("[Auto Name Layers] ", autoNameLayers)
-				print("[Alpha Gain Zero] ", alphaGain)
-				print("[Add Background] ", addBackground)
-				print("[Reverse Layer Order] ", reverseLayerOrder)
-				print("[Adjust Render Range] ", adjustRenderRange)
-				print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
-				print("[Missing Frames] ", missingFrames)
-				print("[Tile Color] ", tileColor)
-				print("[Texture Projection] ", textureProjection)
-				print("[Texture Pre-Comps] ", texturePreComps)
-				print("[Depth Offset] ", depthOffset)
-			end
-
 			-- Starting node position
 			local flow = comp.CurrentFrame.FlowView
 			local origin_x, origin_y = flow:GetPos(selectedTool)
-
+	
 			-- Process ScriptVal data
 			if toolType == "ScriptVal" and nodeType == "Fuse.TVPaintLoader" then
+				-- Name the EXR
+				local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
+				
+				if baseJSONFilename == "" then
+					error("[Error][TVPaintLoader] Please enter a JSON filename in the TVPaintLoader node.")
+				end
+				if not bmd.fileexists(comp:MapPath(baseJSONFilename)) then
+					error("[Error][TVPaintLoader] The selected TVPaint .json file does not exist on disk: " .. tostring(baseJSONFilename))
+				end
+	
+				if skipShowingUI == false then
+					AskForInput()
+	
+					-- Stop running the script
+					if cancelScript == true then
+						return
+					end
+				end
+	
+				if verbose == true then
+					print("[Base Image Folder] ", baseImageFolder)
+					print("[Auto Media Node] ", addNode)
+					print("[Auto Output Node] ", mergeLoaders)
+					print("[Auto Name Layers] ", autoNameLayers)
+					print("[Alpha Gain Zero] ", alphaGain)
+					print("[Add Background] ", addBackground)
+					print("[Reverse Layer Order] ", reverseLayerOrder)
+					print("[Adjust Render Range] ", adjustRenderRange)
+					print("[Node Build Direction] ", direction and "Horizontal" or "Vertical")
+					print("[Missing Frames] ", missingFrames)
+					print("[Tile Color] ", tileColor)
+					print("[Texture Projection] ", textureProjection)
+					print("[Texture Pre-Comps] ", texturePreComps)
+					print("[Depth Offset] ", depthOffset)
+				end
+
 				-- Start Undo
 				comp:StartUndo("TVPaint Comp Builder")
 
@@ -574,8 +584,6 @@ function Main()
 				local tbl = {}
 				tbl = selectedTool["ScriptVal"][comp.CurrentTime] or {}
 
-				-- Name the EXR
-				local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
 				-- Get the TVPaint .json file defined image path
 				baseImageFolder = tostring(parseFilename(baseJSONFilename).PathMap)
 				if verbose == true then
