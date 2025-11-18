@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-18 01.16 AM
+TVPaint Build Comp - v1 2025-11-18 01.29 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -1030,8 +1030,13 @@ function Main()
 									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)) + preCompOffset, origin_y + 6 + preCompOffset)
 								end
 
-								-- Move the camera back to fit the ImagePlane3D
-								cam3D["Transform3DOp.Translate.Z"] = 2
+								if textureProjection == 0 then
+									-- Move the camera back to fit the texture input connection
+									cam3D["Transform3DOp.Translate.Z"] = 2
+								else
+									-- Move the camera back to fit the ImagePlane3D
+									cam3D["Transform3DOp.Translate.Z"] = 1.66
+								end
 
 								-- Sneak the camera3D node into the list of ImagePlane3D nodes
 								table.insert(img3DTbl, cam3D)
@@ -1453,8 +1458,13 @@ function Main()
 									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)), origin_y + 8)
 								end
 
-								-- Move the camera back to fit the ImagePlane3D
-								cam3D["Transform3DOp.Translate.Z"] = 2
+								if textureProjection == 0 then
+									-- Move the camera back to fit the texture input connection
+									cam3D["Transform3DOp.Translate.Z"] = 2
+								else
+									-- Move the camera back to fit the ImagePlane3D
+									cam3D["Transform3DOp.Translate.Z"] = 1.66
+								end
 
 								-- Sneak the camera3D node into the list of ImagePlane3D nodes
 								table.insert(img3DTbl, cam3D)
