@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-17 11.14 PM
+TVPaint Build Comp - v1 2025-11-18 12.24 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -592,6 +592,12 @@ function Main()
 				local offsetX = 2
 				local bg
 
+				-- Shift the nodes to compensate for the 2D texture precomp nodes
+				local preCompOffset = 0
+				if texturePreComps == 1 then
+					preCompOffset = 4
+				end
+
 				if addNode == 0 then
 					-- Loader Node
 					-- Deselect all nodes
@@ -857,9 +863,6 @@ function Main()
 						local cam3D
 						local mmrg
 
-						-- Shift the nodes to compensate for the 2D texture precomp nodes
-						local preCompOffset = 0
-
 						-- Y axis shift value
 						local kStepBy = 1
 						if addBackground == false then
@@ -926,31 +929,9 @@ function Main()
 							-- Merge
 							preCompOffset = 4
 
-							-- Adjust the layer connection ordering
---							local reversedImgTbl =  {}
---							local reversedImgNameTbl = {}
---
---							-- Add the bg element as the base layer
---							if addBackground == true then
---								table.insert(reversedImgTbl, bg)
---								table.insert(reversedImgNameTbl, "bg")
---							end
---
---							-- Flip the read order for the images table
---							for i = #imgTbl, 1, -1 do
---								-- Remove the pre-existing bg node
---								if imgTbl[i] ~= bg then
---									table.insert(reversedImgTbl, imgTbl[i])
---									table.insert(reversedImgNameTbl, imgNameTbl[i])
---								end
---							end
-							-- dump("[Image Layer Name]")
-							-- dump(reversedImgNameTbl)
-
 							-- Add a Merge2D node
 							-- Connect the inputs
 							for k, v in pairs(imgTbl) do
-								---for k, v in pairs(reversedImgTbl) do
 								local mrg
 								-- Control Merge node fg vs bg input ordering
 								if reverseLayerOrder == true then
@@ -1029,10 +1010,10 @@ function Main()
 								-- Control Camera3D node
 								if direction == 0 then
 									-- Build vertical
-									cam3D = comp:AddTool("Camera3D", origin_x + 4 + preCompOffset, origin_y + (offsetY * (k - 1 - kStepBy)))
+									cam3D = comp:AddTool("Camera3D", origin_x + 4 + preCompOffset, origin_y + (offsetY * (k - 1 - kStepBy)) + preCompOffset)
 								else
 									-- Build horizontal
-									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)), origin_y + 6 + preCompOffset)
+									cam3D = comp:AddTool("Camera3D", origin_x + (offsetX * (k - 1 - kStepBy)) + preCompOffset, origin_y + 6 + preCompOffset)
 								end
 
 								-- Move the camera back to fit the ImagePlane3D
@@ -1049,12 +1030,12 @@ function Main()
 								if direction == 0 then
 									-- Build vertical
 									if textureProjection == 0 then
-										img3D = comp:AddTool("Camera3D", origin_x + 4 + preCompOffset , origin_y + (offsetY * (k - kStepBy)))
+										img3D = comp:AddTool("Camera3D", origin_x + 4 + preCompOffset , origin_y + (offsetY * (k - kStepBy)) + preCompOffset)
 
 										-- Move the camera back to fit the ImagePlane3D
 										img3D["Transform3DOp.Translate.Z"] = 2
 									else
-										img3D = comp:AddTool("ImagePlane3D", origin_x + 4 + preCompOffset , origin_y + (offsetY * (k - kStepBy)))
+										img3D = comp:AddTool("ImagePlane3D", origin_x + 4 + preCompOffset , origin_y + (offsetY * (k - kStepBy)) + preCompOffset)
 									end
 								else
 									-- Build horizontal
@@ -1112,7 +1093,7 @@ function Main()
 						local mrg3D
 						if direction == 0 then
 							-- Build vertical
-							mrg3D = comp:AddTool("Merge3D", origin_x + 7 + preCompOffset, origin_y)
+							mrg3D = comp:AddTool("Merge3D", origin_x + 7 + preCompOffset, origin_y + offsetY)
 						else
 							-- Build horizontal
 							mrg3D = comp:AddTool("Merge3D", origin_x, origin_y + 10 + preCompOffset)
@@ -1127,7 +1108,7 @@ function Main()
 						local rnd3D
 						if direction == 0 then
 							-- Build vertical
-							rnd3D = comp:AddTool("Renderer3D", origin_x + 9 + preCompOffset, origin_y)
+							rnd3D = comp:AddTool("Renderer3D", origin_x + 9 + preCompOffset, origin_y + offsetY)
 						else
 							-- Build horizontal
 							rnd3D = comp:AddTool("Renderer3D", origin_x, origin_y + 12 + preCompOffset)

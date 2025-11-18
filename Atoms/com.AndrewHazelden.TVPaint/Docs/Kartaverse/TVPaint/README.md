@@ -2,9 +2,11 @@
 
 ## Overview
 
-The TVPaint data nodes for Blackmagic Design Resolve Studio/Fusion Studio allow you to interact with 2D animation data inside a node graph. This approach works with a series of nodal operators that allow you to edit and modify the TVPaint JSON data on the fly.
+The "TVPaint for Fusion" toolset allows you to interact with 2D cell animation data inside a BMD Fusion Studio node graph. A series of nodal operators allow you to work with TVPaint exported JSON data on the fly.
 
 This TVPaint implementation is based around the "ScriptVal" datatype in Fusion, and works using ideas pioneered by the Vonk Ultra data node project.
+
+![TVPaint Menu](Images/root-menu.png)
 
 ## Software Requirements
 
@@ -42,7 +44,7 @@ Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
 1. Add a TVPaintLoader node to your Fusion comp. Use the node's (Browse) button to select a TVPaint exported .json file on your hard disk. The JSON document's filepath will be entered into the Filename field.
 2. Select the TVPaintLoader node in the node graph area.
-3. Launch the "Scripts > TVPaint > TVPaint Build Comp " menu item. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
+3. Launch the "TVPaint > Build Comp" menu item, or press the "Shift + B" hotkey. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
 4. A TVPaint for Fusion nodegraph will be generated. Keep in mind, that a new undo state is created for you automatically so you can easily revert the changes made to your node graph.
 
 ### Remove Unselected Nodes
@@ -54,7 +56,7 @@ An undo point is defined when the script is run so you can revert the changes ea
 #### Usage:
 
 1. Select several nodes in the flow area.
-2. Launch the "Scripts > Remove Unselected Nodes " menu item.
+2. Launch the "Scripts > TVPaint > Remove Unselected Nodes " menu item, or press the "Shift + Delete" / "Shift + Backspace" hotkey.
 3. All non-selected nodes will be removed from the the node graph.
 
 ### Show Fuses Folder
@@ -113,3 +115,7 @@ The Fusion node graph allows for the use of "data nodes". This nodal operator dr
 This is achieved by encoding the raw TVPaint JSON information into a Fusion datatype called a "ScriptVal" which is represented by a Lua table structure. The TVPaint data is passed between node input and output connections in a way that allows you to visually control the operations that dynamically create, load, edit, render, and save the cell animation.
 
 An TVPaint node graph starts with an "TVPaintLoader" node that imports an existing TVPaint (JSON formatted) file from disk.
+
+## Copyright and Trademarks
+
+[TVPaint](https://tvpaint.com/en) is a trademark of TVPaint Développement. The "TVPaint for Fusion" toolset is an unoffical addon created by the Kartaverse open-source project.
