@@ -17,8 +17,7 @@ LGPL/GPL v3</p>
 
 ]],
 	Deploy = {
-		"Config/TVPaint/TVPaint Hotkeys.fu",
-		"Config/TVPaint/TVPaint Menus.fu",
+		"Config/TVPaint/TVPaint.fu",
 		"Docs/Kartaverse/TVPaint/Images/script-tvpaint-build-comp.png",
 		"Docs/Kartaverse/TVPaint/README.md",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraFPS.fuse",

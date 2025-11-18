@@ -38,6 +38,14 @@ target:RunScript(scriptPath)
 			},
 		},
 	},
+	Hotkeys
+	{
+		Target = "FlowView",
+
+		SHIFT_B = "TVPaint_Build_Comp{}",
+		SHIFT_DELETE = "RunScript{filename = 'Scripts:/Comp/TVPaint/Remove Unselected Nodes.lua'}",
+		SHIFT_BACKSPACE = "RunScript{filename = 'Scripts:/Comp/TVPaint/Remove Unselected Nodes.lua'}",
+	},
 	Menus
 	{
 		Target = "ChildFrame",
