@@ -1,0 +1,55 @@
+--[[--
+==============================================================================
+TVPaint for Fusion - v1 2025-11-17
+==============================================================================
+--]]--
+{
+	Action
+	{
+		ID = "TVPaint_Build_Comp",
+		Category = "TVPaint",
+		Name = "Build Comp...",
+
+		Targets =
+		{
+			Composition =
+			{
+				Execute = _Lua [=[
+local scriptPath = app:MapPath("Scripts:/Comp/TVPaint/TVPaint Build Comp.lua")
+target:RunScript(scriptPath)
+				]=],
+			},
+		},
+	},
+	Action
+	{
+		ID = "TVPaint_About",
+		Category = "TVPaint",
+		Name = "About TVPaint for Fusion",
+
+		Targets =
+		{
+			Composition =
+			{
+				Execute = _Lua [=[
+local scriptPath = app:MapPath("Scripts:/Comp/TVPaint/About TVPaint for Fusion.lua")
+target:RunScript(scriptPath)
+				]=],
+			},
+		},
+	},
+	Menus
+	{
+		Target = "ChildFrame",
+
+		Before "Help"
+		{
+			Sub "TVPaint"
+			{
+				"TVPaint_Build_Comp{}",
+				"_",
+				"TVPaint_About{}",
+			},
+		},
+	},
+}

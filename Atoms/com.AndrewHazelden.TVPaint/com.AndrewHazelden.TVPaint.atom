@@ -3,7 +3,7 @@ Atom {
 	Category = "Bin",
 	Author = "Andrew Hazelden",
 	Version = 1,
-	Date = {2025, 11, 17},
+	Date = {2025, 11, 18},
 	Description = [[<h1>TVPaint Data Nodes</h1>
 <p>The TVPaint data nodes for Blackmagic Design Resolve/Fusion allow you to interact with 2D animation data inside a node graph. This approach works with a series of nodal operators that allow you to edit and modify the TVPaint data on the fly.</p>
 
@@ -17,6 +17,8 @@ LGPL/GPL v3</p>
 
 ]],
 	Deploy = {
+		"Config/TVPaint/TVPaint Hotkeys.fu",
+		"Config/TVPaint/TVPaint Menus.fu",
 		"Docs/Kartaverse/TVPaint/Images/script-tvpaint-build-comp.png",
 		"Docs/Kartaverse/TVPaint/README.md",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraFPS.fuse",
@@ -39,6 +41,7 @@ LGPL/GPL v3</p>
 		"Fuses/Kartaverse/TVPaint/Link/TVPaintLinkImage.fuse",
 		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectFormat.fuse",
 		"Fuses/Kartaverse/TVPaint/Project/TVPaintProjectVersion.fuse",
+		"Scripts/Comp/TVPaint/About TVPaint for Fusion.lua",
 		"Scripts/Comp/TVPaint/Open/Show Comps Folder.lua",
 		"Scripts/Comp/TVPaint/Open/Show Fuses Folder.lua",
 		"Scripts/Comp/TVPaint/Remove Unselected Nodes.lua",
