@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-18 12.24 AM
+TVPaint Build Comp - v1 2025-11-18 01.16 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -19,7 +19,7 @@ The "missingFrames" control defines how should missing frames be handled with Lo
 
 The "baseImageFolder" control defines where the image layer folders are in relation to the active composite. This setting fills in the value used by the TVPaintLinkImage node.
 
-The "baseEXRFolder" control defines where the LifeSaver exported EXR images are saved to disk in relation to the TVPaint JSON file referenced media.
+The "exrSubFolder" control defines where the LifeSaver exported EXR images are saved to disk in relation to the TVPaint JSON file referenced media.
 
 The "adjustRenderRange" control sets the RenderEnd range to match the TVPaint image count.
 
@@ -61,8 +61,8 @@ autoNameLayers = true
 alphaGain = false
 
 -- LifeSaver Options
-baseEXRFolder = "Comp:/exr/"
--- baseEXRFolder = "Comp:/Render/"
+exrSubFolder = "exr/"
+-- exrSubFolder = "Render/"
 
 -- Should a TVPaintBackground node be added
 addBackground = false
@@ -165,7 +165,9 @@ end
 -- returns a table with the following
 --
 -- FullPath : The raw, original path sent to the function
+-- FullPathMap : The PathMap expanded original path sent to the function
 -- Path : The path, without filename
+-- PathMap : The PathMap expanded path, without filename
 -- FullName : The name of the clip w\ extension
 -- Name : The name without extension
 -- CleanName: The name of the clip, without extension or sequence
@@ -178,25 +180,27 @@ end
 function parseFilename(filename)
 	local seq = {}
 	seq.FullPath = filename
+	seq.FullPathMap = comp:MapPath(filename)
 	string.gsub(seq.FullPath, "^(.+[/\\])(.+)", function(path, name) seq.Path = path seq.FullName = name end)
+	string.gsub(seq.FullPath, "^(.+[/\\])(.+)", function(path, name) seq.PathMap = comp:MapPath(path) seq.FullName = name end)
 	string.gsub(seq.FullName, "^(.+)(%..+)$", function(name, ext) seq.Name = name seq.Extension = ext end)
 
 	if not seq.Name then -- no extension?
-		seq.Name = seq.FullName
+			seq.Name = seq.FullName
 	end
 
 	string.gsub(seq.Name, "^(.-)(%d+)$", function(name, SNum) seq.CleanName = name seq.SNum = SNum end)
 
 	if seq.SNum then
-		seq.Number = tonumber( seq.SNum )
-		seq.Padding = string.len( seq.SNum )
+			seq.Number = tonumber(seq.SNum)
+			seq.Padding = string.len(seq.SNum)
 	else
-		seq.SNum = ""
-		seq.CleanName = seq.Name
+			 seq.SNum = ""
+			 seq.CleanName = seq.Name
 	end
 
 	if seq.Extension == nil then seq.Extension = "" end
-	seq.UNC = ( string.sub(seq.Path, 1, 2) == [[\\]] )
+	seq.UNC = (string.sub(seq.Path, 1, 2) == [[\\]])
 
 	return seq
 end
@@ -496,6 +500,9 @@ function Main()
 	-- Read the node selection
 	local selectedTool = comp.ActiveTool
 	if selectedTool then
+		-- Check the node attributes
+		toolAttrs = selectedTool:GetAttrs()
+		nodeType = toolAttrs.TOOLS_RegID
 		-- Check the selected node's output type
 		toolOutput = selectedTool:FindMainOutput(1)
 		if toolOutput ~= nil then
@@ -531,7 +538,7 @@ function Main()
 			local origin_x, origin_y = flow:GetPos(selectedTool)
 
 			-- Process ScriptVal data
-			if toolType == "ScriptVal" then
+			if toolType == "ScriptVal" and nodeType == "Fuse.TVPaintLoader" then
 				-- Start Undo
 				comp:StartUndo("TVPaint Build Comp")
 
@@ -547,6 +554,15 @@ function Main()
 
 				local tbl = {}
 				tbl = selectedTool["ScriptVal"][comp.CurrentTime] or {}
+
+				-- Name the EXR
+				local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
+				-- Get the TVPaint .json file defined image path
+				baseImageFolder = tostring(parseFilename(baseJSONFilename).PathMap)
+				if verbose == true then
+					print("[Base JSON Filepath] ", baseJSONFilename)
+					print("[Revised Base Image Folder] ", baseImageFolder)
+				end
 
 				-- Extract the number of clip layers
 				local layer_max = 0
@@ -730,9 +746,7 @@ function Main()
 							ls = comp:AddTool("Fuse.LifeSaver", origin_x, origin_y + 5)
 						end
 
-						-- Name the EXR
-						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
-						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseEXRFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
+						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseImageFolder) .. tostring(exrSubFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
 
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
@@ -1276,7 +1290,7 @@ function Main()
 
 						-- Name the EXR
 						local baseJSONFilename = selectedTool["Filename"][fu.TIME_UNDEFINED]
-						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseEXRFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
+						ls["Filename"][fu.TIME_UNDEFINED] = tostring(baseImageFolder) .. tostring(exrSubFolder) .. tostring(parseFilename(baseJSONFilename).Name) .. "_${VERSION}.0000.exr"
 
 						-- Connect the inputs
 						for k,v in pairs(imgTbl) do
@@ -1563,6 +1577,8 @@ function Main()
 
 				-- End Undo
 				comp:EndUndo()
+			else
+				error("[Error] Please select a TVPaintLoader node before running this script.")
 			end
 		end
 	else
