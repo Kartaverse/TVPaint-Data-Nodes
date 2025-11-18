@@ -1,5 +1,5 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-18 03.12 AM
+TVPaint Build Comp - v1 2025-11-18 03.39 AM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -31,6 +31,8 @@ The "tileColor" control is used if tile colors are enabled in the flow
 
 The "alphaGain" control can be used to enable alpha compositing for each layer in the MultiMerge node
 
+The "depthOffset" control can be used with Camera3D based texture projections to add multi-plane paralax between each layer.
+
 The "reverseLayerOrder" control allows you to flip the layer sort order when the TVPaintLinkImage nodes are added to the comp, and they are then connected to the MultiMerge node.
 
 The "skipShowingUI" control allows you to avoid displaying the UI Manager window. This improves compatibility of the script with Resolve Free v19.1-20.2+.
@@ -38,16 +40,11 @@ The "skipShowingUI" control allows you to avoid displaying the UI Manager window
 ## Todos
 
 3D
-- Fix Merge3D layer ordering
 - ImagePlane3D size and aspect ratio from clip width/height
 - Camera frustum "fit to image plane" size.
 
-Loader node
-- Take folder prefix from JSON filepath
-
-- Camera Material Input - Depth Offset per layer
-
-
+TVPaintLinkImage
+- Sync Camera3D and ImagePlane3D features to match the Loader options
 --]]--
 
 adjustRenderRange = true
@@ -81,6 +78,9 @@ textureProjection = 0
 
 -- Should the 2D textures be merged before going into the 3D space
 texturePreComps = 0
+
+-- Allows Camera3D based texture projections to add multi-plane paralax between each layer.
+depthOffset = 0.0
 
 -- Are source tiles enabled in the flow
 showTiles = false
@@ -234,13 +234,14 @@ function AskForInput()
 	reverseLayerOrder = getPreferenceData("TVPaint.reverseLayerOrder", reverseLayerOrder, verbose)
 	showTiles = getPreferenceData("TVPaint.showTiles", showTiles, verbose)
 	tileColor = getPreferenceData("TVPaint.tileColor", tileColor, verbose)
-	textureProjection = getPreferenceData("TVPaint.TextureProjection", textureProjection, verbose)
-	texturePreComps = getPreferenceData("TVPaint.TexturePreComps", texturePreComps, verbose)
+	textureProjection = getPreferenceData("TVPaint.textureProjection", textureProjection, verbose)
+	texturePreComps = getPreferenceData("TVPaint.texturePreComps", texturePreComps, verbose)
+	depthOffset = getPreferenceData("TVPaint.depthOffset", depthOffset, verbose)
 	verbose = getPreferenceData("TVPaint.verbose", verbose, verbose)
 
 	local ui = fu.UIManager
 	local disp = bmd.UIDispatcher(ui)
-	local width,height = 300,310
+	local width,height = 300,330
 
 	win = disp:AddWindow({
 		ID = "TVPaint",
@@ -304,6 +305,21 @@ function AskForInput()
 				ui:ComboBox{
 					ID = "TexturePreComps",
 					Text = "Texture PreComps",
+				},
+			},
+			ui:HGroup{
+				Weight = 0.01,
+				ui:Label{
+					ID = "DepthOffsetLabel",
+					Text = "Texture Depth Offset",
+				},
+				ui:DoubleSpinBox{
+					ID = "DepthOffset",
+					Text = "Texture Depth Offset",
+					Value = depthOffset,
+					Minimum = 0.0,
+					Maximum = 100.0,
+					Decimals = 4,
 				},
 			},
 			ui:HGroup{
@@ -468,6 +484,7 @@ function AskForInput()
 		tileColor = itm.TileColor.Checked
 		textureProjection = itm.TextureProjection.CurrentIndex
 		texturePreComps = itm.TexturePreComps.CurrentIndex
+		depthOffset = itm.DepthOffset.Value
 		verbose = itm.Verbose.Checked
 
 		setPreferenceData("TVPaint.direction", itm.BuildDirection.CurrentIndex, verbose)
@@ -483,6 +500,7 @@ function AskForInput()
 		setPreferenceData("TVPaint.tileColor", itm.TileColor.Checked, verbose)
 		setPreferenceData("TVPaint.textureProjection", itm.TextureProjection.CurrentIndex, verbose)
 		setPreferenceData("TVPaint.texturePreComps", itm.TexturePreComps.CurrentIndex, verbose)
+		setPreferenceData("TVPaint.depthOffset", itm.DepthOffset.Value, verbose)
 		setPreferenceData("TVPaint.verbose", itm.Verbose.Checked, verbose)
 
 		disp:ExitLoop()
@@ -531,6 +549,7 @@ function Main()
 				print("[Tile Color] ", tileColor)
 				print("[Texture Projection] ", textureProjection)
 				print("[Texture Pre-Comps] ", texturePreComps)
+				print("[Depth Offset] ", depthOffset)
 			end
 
 			-- Starting node position
@@ -1074,6 +1093,9 @@ function Main()
 									if textureProjection == 0 then
 										-- Camera3D Node
 										img3D:ConnectInput("ImageInput", imgTbl[k])
+
+										-- Texture Depth Offset
+										img3D.IDepth = 100 + (tonumber(depthOffset) * k)
 									else
 										-- ImagePlane3D Node
 										img3D:ConnectInput("MaterialInput", imgTbl[k])
@@ -1085,6 +1107,9 @@ function Main()
 									if textureProjection == 0 then
 										-- Camera3D Node
 										img3D:ConnectInput("ImageInput", mmrg)
+
+										-- Texture Depth Offset
+										img3D.IDepth = 100 + (tonumber(depthOffset) * k)
 									else
 										-- ImagePlane3D Node
 										img3D:ConnectInput("MaterialInput", mmrg)
@@ -1097,6 +1122,9 @@ function Main()
 										if textureProjection == 0 then
 											-- Camera3D Node
 											img3D:ConnectInput("ImageInput", mrgTbl[#mrgTbl])
+
+											-- Texture Depth Offset
+											img3D.IDepth = 100 + (tonumber(depthOffset) * k)
 										else
 											-- ImagePlane3D Node
 											img3D:ConnectInput("MaterialInput", mrgTbl[#mrgTbl])
@@ -1491,6 +1519,9 @@ function Main()
 							-- Connect the inputs
 							if textureProjection == 0 then
 								img3D:ConnectInput("ImageInput", tex2DTbl[k])
+
+								-- Texture Depth Offset
+								img3D.IDepth = 100 + (tonumber(depthOffset) * k)
 							else
 								img3D:ConnectInput("MaterialInput", tex2DTbl[k])
 							end
