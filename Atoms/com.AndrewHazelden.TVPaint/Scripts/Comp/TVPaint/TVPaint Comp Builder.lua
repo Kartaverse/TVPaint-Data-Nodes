@@ -1,12 +1,12 @@
 --[[--
-TVPaint Build Comp - v1 2025-11-18 03.39 AM
+TVPaint Comp Builder - v1 2025-11-18 02.44 PM
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
 Usage:
 1. Add a TVPaintLoader node to your Fusion comp. Use the node's (Browse) button to select a TVPaint exported .json file on your hard disk. The JSON document's filepath will be entered into the Filename field.
 2. Select the TVPaintLoader node in the node graph area.
-3. Launch the "Scripts > TVPaint > TVPaint Build Comp " menu item. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
+3. Launch the "Scripts > TVPaint > TVPaint Comp Builder" menu item. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
 4. A TVPaint for Fusion nodegraph will be generated. Keep in mind, that a new undo state is created for you automatically so you can easily revert the changes made to your node graph.
 
 ## Controls:
@@ -246,7 +246,7 @@ function AskForInput()
 	win = disp:AddWindow({
 		ID = "TVPaint",
 		TargetID = "TVPaint",
-		WindowTitle = "TVPaint Build Comp",
+		WindowTitle = "TVPaint Comp Builder",
 		Geometry = {100, 100, width, height},
 		Spacing = 10,
 
@@ -513,7 +513,7 @@ end
 
 
 function Main()
-	print("[TVPaint] Build Comp Script")
+	print("[TVPaint] Comp Builder Script")
 
 	-- Read the node selection
 	local selectedTool = comp.ActiveTool
@@ -559,7 +559,7 @@ function Main()
 			-- Process ScriptVal data
 			if toolType == "ScriptVal" and nodeType == "Fuse.TVPaintLoader" then
 				-- Start Undo
-				comp:StartUndo("TVPaint Build Comp")
+				comp:StartUndo("TVPaint Comp Builder")
 
 				-- Disable the file browser dialog
 				local AutoClipBrowse = app:GetPrefs("Global.UserInterface.AutoClipBrowse")

@@ -18,6 +18,7 @@ LGPL/GPL v3</p>
 ]],
 	Deploy = {
 		"Config/TVPaint/TVPaint.fu",
+		"Docs/Kartaverse/TVPaint/Images/root-menu.png",
 		"Docs/Kartaverse/TVPaint/Images/script-tvpaint-build-comp.png",
 		"Docs/Kartaverse/TVPaint/README.md",
 		"Fuses/Kartaverse/TVPaint/Camera/TVPaintCameraFPS.fuse",
@@ -44,6 +45,6 @@ LGPL/GPL v3</p>
 		"Scripts/Comp/TVPaint/Open/Show Comps Folder.lua",
 		"Scripts/Comp/TVPaint/Open/Show Fuses Folder.lua",
 		"Scripts/Comp/TVPaint/Remove Unselected Nodes.lua",
-		"Scripts/Comp/TVPaint/TVPaint Build Comp.lua",
+		"Scripts/Comp/TVPaint/TVPaint Comp Builder.lua",
 	},
 }

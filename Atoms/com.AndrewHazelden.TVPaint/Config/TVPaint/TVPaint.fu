@@ -6,16 +6,16 @@ TVPaint for Fusion - v1 2025-11-17
 {
 	Action
 	{
-		ID = "TVPaint_Build_Comp",
+		ID = "TVPaint_Comp_Builder",
 		Category = "TVPaint",
-		Name = "Build Comp...",
+		Name = "Comp Builder...",
 
 		Targets =
 		{
 			Composition =
 			{
 				Execute = _Lua [=[
-local scriptPath = app:MapPath("Scripts:/Comp/TVPaint/TVPaint Build Comp.lua")
+local scriptPath = app:MapPath("Scripts:/Comp/TVPaint/TVPaint Comp Builder.lua")
 target:RunScript(scriptPath)
 				]=],
 			},
@@ -42,7 +42,7 @@ target:RunScript(scriptPath)
 	{
 		Target = "FlowView",
 
-		SHIFT_B = "TVPaint_Build_Comp{}",
+		SHIFT_B = "TVPaint_Comp_Builder{}",
 		SHIFT_DELETE = "RunScript{filename = 'Scripts:/Comp/TVPaint/Remove Unselected Nodes.lua'}",
 		SHIFT_BACKSPACE = "RunScript{filename = 'Scripts:/Comp/TVPaint/Remove Unselected Nodes.lua'}",
 	},
@@ -54,7 +54,7 @@ target:RunScript(scriptPath)
 		{
 			Sub "TVPaint"
 			{
-				"TVPaint_Build_Comp{}",
+				"TVPaint_Comp_Builder{}",
 				"_",
 				"TVPaint_About{}",
 			},

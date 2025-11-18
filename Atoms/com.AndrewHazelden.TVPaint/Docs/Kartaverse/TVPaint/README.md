@@ -34,7 +34,7 @@ To run TVPaint based workflows on your Resolve/Fusion system you will need the f
 
 Look in the Fusion "Script/TVPaint" menu to see the automation scripts.
 
-### TVPaint Build Comp
+### TVPaint Comp Builder
 
 Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
@@ -44,7 +44,7 @@ Auto-build a comp node-graph based upon the active TVPaintLoader node selection.
 
 1. Add a TVPaintLoader node to your Fusion comp. Use the node's (Browse) button to select a TVPaint exported .json file on your hard disk. The JSON document's filepath will be entered into the Filename field.
 2. Select the TVPaintLoader node in the node graph area.
-3. Launch the "TVPaint > Build Comp" menu item, or press the "Shift + B" hotkey. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
+3. Launch the "TVPaint > Comp Builder" menu item, or press the "Shift + B" hotkey. A dialog appears that allows you to customize the settings. Click the "Run" button to continue.
 4. A TVPaint for Fusion nodegraph will be generated. Keep in mind, that a new undo state is created for you automatically so you can easily revert the changes made to your node graph.
 
 ### Remove Unselected Nodes
